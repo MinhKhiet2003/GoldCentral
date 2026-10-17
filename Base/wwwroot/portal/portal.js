@@ -1,0 +1,189 @@
+'use strict';
+const $ = s => document.querySelector(s);
+const isAdmin = document.body.dataset.admin === 'true';
+const categories = {vaccination:'Tiêm chủng',dermatology:'Da liễu & Thẩm mỹ',general:'Khám chữa bệnh',office:'Văn phòng & Nội bộ'};
+const platforms = {system:'Hệ thống Gold',facebook:'Facebook',zalo:'Zalo',tiktok:'TikTok',youtube:'YouTube',website:'Website'};
+let apps = [], view = isAdmin?'manage':'home', token = '', refreshToken = '', deleteId = null, requestVersion = 0;
+function saveAdminSession(data){token=data.accessToken;refreshToken=data.refreshToken;try{sessionStorage.setItem('gold-admin-session',JSON.stringify({refreshToken,refreshTokenExpiresAt:data.refreshTokenExpiresAt}));}catch{}}
+function forgetAdminSession(){token='';refreshToken='';try{sessionStorage.removeItem('gold-admin-session');}catch{}}
+let statistics = null;
+let catalogType = 'all';
+let editorViewport = null, deleteViewport = null;
+let favorites;
+try { const saved=JSON.parse(localStorage.getItem('gold-favorites')||'[]'); favorites=new Set(Array.isArray(saved)?saved:[]); } catch { favorites=new Set(); }
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fold = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase();
+let toastTimer;
+let refreshPromise=null;
+function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),3500);}
+function captureViewport(){
+ const active=document.activeElement,grid=active?.closest('.card-grid');
+ return {x:window.scrollX,y:window.scrollY,focus:active?.dataset.id&&active?.dataset.action?{grid:grid?.id,id:active.dataset.id,action:active.dataset.action}:null};
+}
+function restoreViewport(position){
+ if(!position)return;
+ if(position.focus){const scope=document.getElementById(position.focus.grid)||document;const target=[...scope.querySelectorAll('[data-action][data-id]')].find(b=>b.dataset.id===position.focus.id&&b.dataset.action===position.focus.action);target?.focus({preventScroll:true});}
+ window.scrollTo({left:position.x,top:position.y,behavior:'instant'});
+}
+function renderPreservingViewport(position=captureViewport()){render();restoreViewport(position);}
+function updateApp(updated,position){const index=apps.findIndex(a=>a.id===updated.id);if(index<0)apps.push(updated);else apps[index]=updated;renderPreservingViewport(position);}
+function adminState(){
+ document.body.classList.toggle('login-only',isAdmin&&!token);
+ $('#login-panel').hidden=!isAdmin||Boolean(token);$('#portal-content').hidden=isAdmin&&!token;
+ $('#admin-nav').hidden=!isAdmin||!token;$('#add-app').hidden=!(isAdmin&&token&&view==='manage');
+ if($('#logout'))$('#logout').hidden=!token;
+ $('#favorites-section').hidden=isAdmin;$('#metrics').hidden=view!=='stats';$('#sort').hidden=!isAdmin;
+ $('#stats-period').hidden=view!=='stats';$('#stats-history-note').hidden=view!=='stats';
+ $('#report-section').hidden=view!=='stats';
+ $('#catalog-section').hidden=isAdmin;$('#category-filter').hidden=!isAdmin;
+ $('.filter-row').hidden=!isAdmin;
+ $('#app-management-section').hidden=!isAdmin;
+ $('#news-admin-panel').hidden=!isAdmin||!token||view!=='news';
+ $('.portal-layout').hidden=isAdmin&&view==='news';
+}
+function clearAdmin(){forgetAdminSession();apps=[];statistics=null;requestVersion++;adminState();$('#results').replaceChildren();$('#metrics').replaceChildren();}
+async function api(url,options={}){
+ const headers={...options.headers};if(token)headers.Authorization='Bearer '+token;
+ if(options.body&&!(options.body instanceof FormData))headers['Content-Type']='application/json';
+ let r;try{r=await fetch(url,{...options,headers});if(r.status===401&&isAdmin&&refreshToken&&!url.includes('/api/auth/refresh')&&!url.includes('/api/accounts/login')){refreshPromise??=(async()=>{const response=await fetch('/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken,deviceName:'Gold Central · Trình duyệt'})});const refreshed=await response.json().catch(()=>null);if(!response.ok||!refreshed?.data?.accessToken)throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');saveAdminSession(refreshed.data);return true;})().finally(()=>refreshPromise=null);try{await refreshPromise;headers.Authorization='Bearer '+token;r=await fetch(url,{...options,headers});}catch{clearAdmin();throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');}}}catch(error){if(error instanceof TypeError)throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối và thử lại.');throw error;}const data=r.status===204?null:await r.json().catch(()=>null);
+ if(!r.ok){if(r.status===401&&isAdmin)clearAdmin();throw new Error(data?.message||(r.status===403?'Bạn cần tài khoản quản trị để thực hiện thao tác này.':r.status===401?'Vui lòng đăng nhập lại.':'Không thể hoàn tất thao tác. Vui lòng thử lại.'));}return data;
+}
+async function load(){const version=++requestVersion;$('#results').innerHTML='<div class="empty">Đang tải dữ liệu...</div>';if(view==='stats')$('#metrics').replaceChildren();try{const query=`/api/portal/statistics?from=${encodeURIComponent($('#stats-date-from').value)}&to=${encodeURIComponent($('#stats-date-to').value)}`;const [data,report]=await Promise.all([api(isAdmin?'/api/portal/manage':'/api/portal/apps'),view==='stats'?api(query):Promise.resolve(null)]);if(version!==requestVersion)return;apps=data;statistics=report;if(report){$('#stats-date-from').value=report.rangeStart;$('#stats-date-to').value=report.rangeEnd;$('#stats-date-from').max=report.rangeEnd;$('#stats-date-to').min=report.rangeStart;syncDatePreset();}render();}catch(e){if(version===requestVersion)$('#results').innerHTML=`<div class="empty"><b>Chưa thể tải dữ liệu</b><p>${esc(e.message)}</p><button class="secondary" data-action="retry">Thử lại</button></div>`;}}
+function metric(value,label){return `<div class="metric"><strong>${value.toLocaleString('vi-VN')}</strong><span>${label}</span></div>`;}
+function renderReportCharts(rows){
+ const key='rangeClicks';
+ const aggregate=(items,labelOf)=>{const map=new Map();for(const a of items){const label=labelOf(a);if(label)map.set(label,(map.get(label)||0)+a[key]);}return [...map].map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value||a.label.localeCompare(b.label,'vi')).slice(0,7);};
+ const groups=[{title:'Theo lĩnh vực',note:'Lượt truy cập theo phòng ban',items:aggregate(rows,a=>categories[a.category])},{title:'Theo hệ thống',note:'Các ứng dụng nội bộ được truy cập nhiều nhất',items:aggregate(rows.filter(a=>a.platform==='system'),a=>a.name)},{title:'Theo mạng xã hội',note:'Lượt truy cập theo kênh truyền thông',items:aggregate(rows.filter(a=>a.platform!=='system'),a=>platforms[a.platform])}];
+ $('#report-charts').innerHTML=groups.map((group,index)=>{const max=Math.max(1,...group.items.map(x=>x.value));return `<article class="report-card"><div class="report-card-heading"><span class="report-index">0${index+1}</span><div><h3>${esc(group.title)}</h3><p>${esc(group.note)}</p></div></div>${group.items.length?`<div class="chart-bars" role="list">${group.items.map(item=>`<div class="chart-row" role="listitem"><div class="chart-label"><span title="${esc(item.label)}">${esc(item.label)}</span><b>${item.value.toLocaleString('vi-VN')}</b></div><div class="chart-track" role="progressbar" aria-label="${esc(item.label)}" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${item.value}"><span style="width:${Math.max(item.value?3:0,item.value/max*100)}%"></span></div></div>`).join('')}</div>`:'<p class="chart-empty">Chưa có lượt truy cập trong nhóm này.</p>'}</article>`}).join('');
+}
+function fallbackMedia(){return '<span class="gold-logo"><img src="/portal/gold-logo.png" alt=""></span>';}
+const platformIcons = {
+ website:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#eef5e8" stroke="#548244" stroke-width="1.6"/><ellipse cx="12" cy="12" rx="4" ry="9" fill="none" stroke="#548244" stroke-width="1.4"/><path d="M3 12h18M5 7.5h14M5 16.5h14" fill="none" stroke="#548244" stroke-width="1.3"/></svg>',
+ facebook:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#1877f2" d="M24 12a12 12 0 1 0-13.9 11.85v-8.38H7.05V12h3.05V9.36c0-3.01 1.79-4.67 4.53-4.67 1.31 0 2.68.23 2.68.23v2.95H15.8c-1.49 0-1.95.93-1.95 1.88V12h3.32l-.53 3.47h-2.79v8.38A12 12 0 0 0 24 12Z"/></svg>',
+ zalo:'<img class="zalo-brand-icon" src="/portal/icons/zalo.svg" alt="" aria-hidden="true">',
+ tiktok:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#17221d"/><path d="M14 5v10a4 4 0 1 1-4-4M14 5c0 3 2 5 5 5" fill="none" stroke="#25f4ee" stroke-width="2.7" transform="translate(-.7 .5)"/><path d="M14 5v10a4 4 0 1 1-4-4M14 5c0 3 2 5 5 5" fill="none" stroke="#fe2c55" stroke-width="2.7" transform="translate(.6 -.3)"/><path d="M14 5v10a4 4 0 1 1-4-4M14 5c0 3 2 5 5 5" fill="none" stroke="#fff" stroke-width="2.1"/></svg>',
+ youtube:'<svg viewBox="0 0 28 24" aria-hidden="true"><rect y="3" width="28" height="18" rx="6" fill="#f03"/><path d="m11 8 8 4-8 4Z" fill="#fff"/></svg>',
+ instagram:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="6" fill="#d9348a"/><rect x="5" y="5" width="14" height="14" rx="4" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="12" cy="12" r="3.3" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="16.5" cy="7.6" r="1" fill="#fff"/></svg>'
+};
+function platformBadge(a){
+ if(a.platform==='system')return `<span class="category-label"><i class="category-dot ${esc(a.category)}"></i>${esc(categories[a.category])}</span>`;
+ const label=platforms[a.platform]||(a.platform==='instagram'?'Instagram':a.platform);
+ return `<span class="platform-mark" role="img" aria-label="${esc(label)}" title="${esc(label)}">${platformIcons[a.platform]||'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 15 6-6m-8 3-2 2a4 4 0 0 0 6 6l3-3m-2-10 2-2a4 4 0 0 1 6 6l-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'}</span>`;
+}
+function card(a){const ready=Boolean(a.url&&a.isVisible);return `<article class="app-card ${!ready?'unconfigured':''}" data-app-id="${a.id}">
+ ${ready?`<button class="card-link" data-action="visit" data-id="${a.id}" aria-label="Truy cập ${esc(a.name)} (mở trong tab mới)" title="${esc(a.name)} · ${esc(platforms[a.platform]||a.platform)}"></button>`:''}
+ <div class="card-media ${a.imageUrl?'has-image':''}">${a.imageUrl?`<img class="cover-image" src="${esc(a.imageUrl)}" alt="" loading="lazy">`:fallbackMedia()}<button class="favorite ${favorites.has(a.id)?'on':''}" data-action="favorite" data-id="${a.id}" aria-label="${favorites.has(a.id)?'Bỏ yêu thích':'Thêm yêu thích'} ${esc(a.name)}" aria-pressed="${favorites.has(a.id)}">${favorites.has(a.id)?'♥':'♡'}</button></div>
+ <div class="card-content"><h3>${esc(a.name)}</h3><p class="card-description">${esc(a.description)}</p>
+ <div class="card-bottom">${platformBadge(a)}<span class="card-cta ${ready?'ready':''}">${ready?'Truy cập <span aria-hidden="true">↗</span>':'Chờ cấu hình'}</span></div>
+ ${view==='manage'?`<div class="manage-meta">Thứ tự ${a.order} · ${a.clicks.toLocaleString('vi-VN')} lượt nhấp · ${a.isVisible?'Đang hiện':'Đang ẩn'}</div><div class="manage-actions"><button data-action="edit" data-id="${a.id}">Sửa</button><button data-action="toggle" data-id="${a.id}">${a.isVisible?'Ẩn':'Hiện'}</button><button class="delete" data-action="delete" data-id="${a.id}">Xóa</button></div>`:''}</div></article>`;}
+function resetFilters(){ $('#search').value='';$('#category-filter').value='all';$('#platform-filter').value='all';catalogType='all';$('#catalog-platform-filter').value='all'; }
+function renderCatalog(matching){
+ const department=$('#category-filter').value,platform=$('#catalog-platform-filter').value;
+ const scoped=matching.filter(a=>department==='all'||a.category===department);
+ const displayed=scoped.filter(a=>catalogType==='all'||(catalogType==='system'?a.platform==='system':a.platform!=='system'&&(platform==='all'||a.platform===platform)));
+ $('#catalog-count').textContent=scoped.length;
+ $('#system-count').textContent=scoped.filter(a=>a.platform==='system').length;
+ $('#social-count').textContent=scoped.filter(a=>a.platform!=='system').length;
+ $('#department-title').textContent=department==='all'?'Tất cả đơn vị':categories[department];
+ $('#catalog-result-count').textContent=`${displayed.length} ứng dụng`;
+ $('#catalog-platform-filter').hidden=catalogType!=='social';
+ document.querySelectorAll('[data-department]').forEach(b=>{const active=b.dataset.department===department;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1;b.querySelector('span').textContent=matching.filter(a=>b.dataset.department==='all'||a.category===b.dataset.department).length;});
+ $('#department-panel').setAttribute('aria-labelledby','department-'+department);
+ document.querySelectorAll('[data-type]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.type===catalogType)));
+ $('#catalog-results').innerHTML=displayed.length?displayed.map(card).join(''):'<div class="empty"><b>Chưa có ứng dụng phù hợp</b><p>Đổi loại ứng dụng, đơn vị hoặc từ khóa để xem thêm.</p><button class="secondary" data-action="reset">Xem tất cả ứng dụng</button></div>';
+}
+function render(){
+ const visible=apps.filter(a=>a.isVisible);
+ $('#favorite-count').textContent=visible.filter(a=>favorites.has(a.id)).length;
+ const search=fold($('#search').value.trim()),cat=$('#category-filter').value,platform=$('#platform-filter').value;
+ const matching=apps.filter(a=>fold(a.name+' '+a.description+' '+platforms[a.platform]+' '+categories[a.category]).includes(search));
+ let filtered=isAdmin?matching.filter(a=>(platform==='all'||a.platform===platform)&&(cat==='all'||a.category===cat)):matching.filter(a=>cat==='all'||a.category===cat);
+ if(!isAdmin)$('#favorite-count').textContent=filtered.filter(a=>favorites.has(a.id)).length;
+ const sort=$('#sort').value;filtered.sort(sort==='name'?(a,b)=>a.name.localeCompare(b.name,'vi'):sort==='clicks'?(a,b)=>b.clicks-a.clicks:(a,b)=>a.order-b.order||a.name.localeCompare(b.name,'vi'));
+ $('#app-count').textContent=filtered.length;$('#result-count').textContent=`${filtered.length} ứng dụng`;
+ if(!isAdmin){const saved=filtered.filter(a=>favorites.has(a.id));$('#favorite-results').innerHTML=saved.length?saved.map(card).join(''):`<div class="favorite-empty"><span aria-hidden="true">♡</span><div><b>${favorites.size?'Không có yêu thích phù hợp với bộ lọc':'Lưu những kết nối bạn thường dùng'}</b><p>${favorites.size?'Thử đổi từ khóa hoặc bỏ bớt bộ lọc.':'Nhấn trái tim trên thẻ để thêm ứng dụng vào danh sách yêu thích.'}</p></div></div>`;}
+ if(view==='stats'&&statistics){
+  const ids=new Set(filtered.map(a=>a.id)),rows=statistics.items.filter(a=>ids.has(a.id));
+  const sum=key=>rows.reduce((s,a)=>s+a[key],0),displayDate=value=>new Date(value+'T00:00:00+07:00').toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
+  const rangeLabel=statistics.rangeStart===statistics.rangeEnd?'Ngày '+displayDate(statistics.rangeStart):'Khoảng '+displayDate(statistics.rangeStart)+' – '+displayDate(statistics.rangeEnd);
+  $('#metrics').innerHTML=metric(sum('rangeClicks'),'Lượt truy cập trong khoảng')+metric(rows.filter(a=>a.platform==='system').reduce((s,a)=>s+a.rangeClicks,0),'Hệ thống')+metric(rows.filter(a=>a.platform!=='system').reduce((s,a)=>s+a.rangeClicks,0),'Mạng xã hội')+metric(rows.filter(a=>a.rangeClicks>0).length,'Ứng dụng được truy cập');
+  $('#stats-range').textContent=rangeLabel;
+  $('#report-range-label').textContent=rangeLabel;
+  renderReportCharts(rows);
+  rows.sort($('#sort').value==='clicks'?(a,b)=>b.rangeClicks-a.rangeClicks:$('#sort').value==='name'?(a,b)=>a.name.localeCompare(b.name,'vi'):()=>0);
+  $('#results').innerHTML=`<div class="stats-panel"><table><thead><tr><th>ỨNG DỤNG</th><th>LĨNH VỰC</th><th>TRẠNG THÁI</th><th>LƯỢT TRUY CẬP TRONG KHOẢNG</th></tr></thead><tbody>${rows.map(a=>`<tr><td><strong>${esc(a.name)}</strong></td><td>${esc(categories[a.category])}</td><td><span class="stats-status ${a.isVisible?'visible':'hidden'}">${a.isVisible?'Đang hiển thị':'Đang ẩn'}</span></td><td><strong class="stats-click-count">${a.rangeClicks.toLocaleString('vi-VN')}</strong></td></tr>`).join('')||'<tr><td colspan="4">Không có dữ liệu phù hợp.</td></tr>'}</tbody></table></div>`;
+ }else if(isAdmin){$('#results').innerHTML=filtered.length?filtered.map(card).join(''):'<div class="empty"><b>Không tìm thấy ứng dụng</b><p>Thử từ khóa khác hoặc bỏ bớt bộ lọc.</p><button class="secondary" data-action="reset">Xóa bộ lọc</button></div>';}
+ if(!isAdmin){$('#results').replaceChildren();renderCatalog(matching);}
+ document.querySelectorAll('.cover-image').forEach(img=>{const fallback=()=>{img.parentElement.classList.remove('has-image');img.insertAdjacentHTML('beforebegin',fallbackMedia());img.remove();};img.addEventListener('error',fallback,{once:true});if(img.complete&&!img.naturalWidth)fallback();});
+}
+async function switchView(next){
+ if(!isAdmin||!token)return;
+ view=next;document.body.dataset.view=view;adminState();
+ document.querySelectorAll('#admin-nav [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
+ if(next==='news'){await loadNewsAdmin();return;}
+ $('#page-title').textContent=view==='manage'?'Quản lý ứng dụng':'Thống kê truy cập';
+ $('#page-subtitle').textContent=view==='manage'?'Quản lý đường dẫn, ảnh bìa và thứ tự hiển thị.':'Theo dõi lượt nhấp theo ngày, tuần, tháng và tổng.';
+ $('#directory-title').firstChild.textContent=view==='stats'?'Thống kê ứng dụng ':'Danh sách ứng dụng ';
+ $('#directory-subtitle').textContent=view==='stats'?'Số liệu theo kỳ của ngày được chọn, áp dụng các bộ lọc bên dưới.':'Ứng dụng đang hiển thị xuất hiện trong danh mục theo phòng ban.';
+ document.querySelectorAll('#admin-nav [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));await load();
+}
+function edit(a){editorViewport=captureViewport();const f=$('#app-form');f.reset();f.elements.id.value=a?.id||'';for(const key of ['name','description','category','platform','url','imageUrl','order'])if(a)f.elements[key].value=a[key]??'';if(!a)f.elements.order.value=Math.max(0,...apps.map(x=>x.order))+1;f.elements.isVisible.checked=a?.isVisible??true;$('#editor-error').textContent='';$('#editor-title').textContent=a?'Chỉnh sửa ứng dụng':'Thêm ứng dụng';$('#editor').showModal();}
+$('#admin-nav').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)switchView(b.dataset.view);});
+for(const selector of ['#category-filter','#sort','#platform-filter'])$(selector).addEventListener('change',render);
+$('#search').addEventListener('input',render);
+function syncDatePreset(){const from=$('#stats-date-from').value,to=$('#stats-date-to').value,today=todayVn(),selected=from===to?(from===today?'today':from===shiftDate(today,-1)?'yesterday':''):'';document.querySelectorAll('[data-date-preset]').forEach(button=>{const active=button.dataset.datePreset===selected;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});}
+function refreshDateBounds(changed){const from=$('#stats-date-from'),to=$('#stats-date-to');if(changed==='from'&&from.value>to.value)to.value=from.value;if(changed==='to'&&to.value<from.value)from.value=to.value;from.max=to.value;to.min=from.value;syncDatePreset();load();}
+$('#stats-date-from').addEventListener('change',()=>{if($('#stats-date-from').checkValidity())refreshDateBounds('from');});$('#stats-date-to').addEventListener('change',()=>{if($('#stats-date-to').checkValidity())refreshDateBounds('to');});
+const todayVn=()=>new Date(Date.now()+7*60*60*1000).toISOString().slice(0,10),shiftDate=(date,days)=>{const value=new Date(date+'T12:00:00+07:00');value.setUTCDate(value.getUTCDate()+days);return value.toISOString().slice(0,10);};
+$('.stats-date-presets').addEventListener('click',e=>{const preset=e.target.closest('[data-date-preset]')?.dataset.datePreset;if(!preset)return;const date=shiftDate(todayVn(),preset==='yesterday'?-1:0);$('#stats-date-from').value=date;$('#stats-date-to').value=date;refreshDateBounds('preset');});
+function selectDepartment(button){$('#category-filter').value=button.dataset.department;render();}
+const departmentLayout=window.matchMedia('(min-width:1100px)');
+function updateDepartmentOrientation(){$('#department-tabs').setAttribute('aria-orientation',departmentLayout.matches?'vertical':'horizontal');}
+departmentLayout.addEventListener('change',updateDepartmentOrientation);updateDepartmentOrientation();
+$('#department-tabs').addEventListener('click',e=>{const button=e.target.closest('[data-department]');if(button)selectDepartment(button);});
+$('#department-tabs').addEventListener('keydown',e=>{
+ const previous=departmentLayout.matches?'ArrowUp':'ArrowLeft',nextKey=departmentLayout.matches?'ArrowDown':'ArrowRight';
+ if(![previous,nextKey,'Home','End'].includes(e.key))return;
+ const tabs=[...document.querySelectorAll('[data-department]')],index=tabs.indexOf(e.target);if(index<0)return;
+ e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(index+(e.key===nextKey?1:-1)+tabs.length)%tabs.length;
+ selectDepartment(tabs[next]);tabs[next].focus();
+});
+$('#type-filters').addEventListener('click',e=>{const button=e.target.closest('[data-type]');if(button){catalogType=button.dataset.type;render();}});
+$('#catalog-platform-filter').addEventListener('change',render);
+async function handleCardAction(e){
+ const b=e.target.closest('[data-action]');if(!b)return;const a=apps.find(x=>x.id===b.dataset.id),position=captureViewport();
+ try{switch(b.dataset.action){
+ case 'retry':await load();break;
+ case 'reset':resetFilters();render();break;
+ case 'favorite':favorites.has(a.id)?favorites.delete(a.id):favorites.add(a.id);try{localStorage.setItem('gold-favorites',JSON.stringify([...favorites]));}catch{}renderPreservingViewport(position);break;
+ case 'visit':{b.disabled=true;const win=window.open('about:blank','_blank');if(win)win.opener=null;try{const result=await api(`/api/portal/apps/${a.id}/visit`,{method:'POST'});if(win)win.location.href=result.url;else window.location.assign(result.url);a.clicks++;renderPreservingViewport(position);}catch(error){win?.close();b.disabled=false;throw error;}break;}
+ case 'edit':if(token)edit(a);break;
+ case 'toggle':if(!token)return;b.disabled=true;updateApp(await api(`/api/portal/apps/${a.id}`,{method:'PUT',body:JSON.stringify({...a,isVisible:!a.isVisible})}),position);toast('Đã cập nhật hiển thị.');break;
+ case 'delete':if(!token)return;deleteId=a.id;deleteViewport=position;$('#delete-name').textContent=a.name;$('#delete-dialog').showModal();break;
+ }}catch(error){b.disabled=false;toast(error.message);}
+}
+$('#results').addEventListener('click',handleCardAction);$('#favorite-results').addEventListener('click',handleCardAction);
+$('#catalog-results').addEventListener('click',handleCardAction);
+$('#confirm-delete').onclick=async()=>{const b=$('#confirm-delete');b.disabled=true;try{await api(`/api/portal/apps/${deleteId}`,{method:'DELETE'});$('#delete-dialog').close();apps=apps.filter(a=>a.id!==deleteId);renderPreservingViewport(deleteViewport);toast('Đã xóa ứng dụng.');}catch(e){toast(e.message);}finally{b.disabled=false;}};
+$('#add-app').onclick=()=>{if(isAdmin&&token)edit();};
+if($('#logout'))$('#logout').onclick=async()=>{const oldToken=token,oldRefresh=refreshToken;if(oldToken&&oldRefresh)try{await fetch('/api/auth/logout',{method:'POST',headers:{Authorization:'Bearer '+oldToken,'Content-Type':'application/json'},body:JSON.stringify({refreshToken:oldRefresh})});}catch{}clearAdmin();$('#login-form').reset();toast('Đã thoát chế độ quản trị trên trình duyệt này.');};
+$('#login-form').onsubmit=async e=>{e.preventDefault();const f=e.target,b=f.querySelector('[type=submit]');b.disabled=true;b.setAttribute('aria-busy','true');b.textContent='Đang đăng nhập...';$('#login-error').textContent='';try{const response=await api('/api/accounts/login',{method:'POST',body:JSON.stringify({username:f.elements.username.value,password:f.elements.password.value})});const data=response.data;if(data.account.role!=='admin')throw new Error('Tài khoản này không có quyền quản trị.');saveAdminSession(data);f.reset();await switchView('manage');toast('Đăng nhập quản trị thành công.');}catch(error){$('#login-error').textContent=error.message;$('#login-error').focus({preventScroll:true});}finally{b.disabled=false;b.removeAttribute('aria-busy');b.innerHTML='Đăng nhập <span>→</span>';}};
+$('#app-form').onsubmit=async e=>{e.preventDefault();const f=e.target,b=f.querySelector('[type=submit]');b.disabled=true;$('#editor-error').textContent='';try{
+ let imageUrl=f.elements.imageUrl.value;const file=$('#image-file').files[0];if(file){if(file.size>10*1024*1024||!['image/png','image/jpeg'].includes(file.type))throw new Error('Vui lòng chọn ảnh PNG hoặc JPG, tối đa 10 MB.');const form=new FormData();form.append('file',file);const uploaded=await api('/api/files/upload',{method:'POST',body:form});imageUrl=uploaded.data.url;}
+ const id=f.elements.id.value,body={name:f.elements.name.value,description:f.elements.description.value,category:f.elements.category.value,platform:f.elements.platform.value,url:f.elements.url.value||null,imageUrl:imageUrl||null,order:Number(f.elements.order.value),isVisible:f.elements.isVisible.checked,isFeatured:apps.find(a=>a.id===id)?.isFeatured??false};const updated=await api('/api/portal/apps'+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(body)});$('#editor').close();updateApp(updated,editorViewport);toast('Đã lưu ứng dụng.');
+ }catch(error){$('#editor-error').textContent=error.message;}finally{b.disabled=false;}};
+for(const b of document.querySelectorAll('dialog .close'))b.addEventListener('click',()=>b.closest('dialog').close());
+$('#editor').addEventListener('close',()=>restoreViewport(editorViewport));
+$('#delete-dialog').addEventListener('close',()=>restoreViewport(deleteViewport));
+$('#about').onclick=()=>$('#about-dialog').showModal();
+window.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!document.querySelector('dialog[open]')&&!$('#portal-content').hidden){e.preventDefault();$('#search').focus();}});
+async function restoreAdminSession(){
+ let session;try{session=JSON.parse(sessionStorage.getItem('gold-admin-session')||'null');}catch{}
+ if(!session?.refreshToken||!isAdmin)return;
+ if(session.refreshTokenExpiresAt&&new Date(session.refreshTokenExpiresAt)<=new Date()){forgetAdminSession();return;}
+ try{const response=await fetch('/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:session.refreshToken,deviceName:'Gold Central · Trình duyệt'})});const result=await response.json().catch(()=>null);if(!response.ok||!result?.data?.accessToken||result.data.account.role!=='admin'){forgetAdminSession();adminState();return;}saveAdminSession(result.data);await switchView('manage');}
+ catch{forgetAdminSession();adminState();$('#login-error').textContent='Không thể khôi phục phiên. Vui lòng đăng nhập lại.';}
+}
+adminState();if(!isAdmin)load();else restoreAdminSession();
+
+
