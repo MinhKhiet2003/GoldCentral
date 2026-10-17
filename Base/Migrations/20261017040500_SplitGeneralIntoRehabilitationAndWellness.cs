@@ -14,6 +14,19 @@ namespace Base.Migrations
             migrationBuilder.Sql("ALTER TABLE \"PortalApp\" DROP CONSTRAINT IF EXISTS \"CK_PortalApp_Category\"");
             migrationBuilder.Sql("ALTER TABLE \"NewsArticle\" DROP CONSTRAINT IF EXISTS \"CK_NewsArticle_Department\"");
 
+            migrationBuilder.Sql("""
+                DO $$
+                BEGIN
+                    IF to_regclass('public."PortalDepartment"') IS NOT NULL THEN
+                        INSERT INTO "PortalDepartment" ("Id", "Code", "Name", "AccessPasswordHash", "AccessVersion", "IsGoldInternal")
+                        VALUES
+                            ('20000000-0000-0000-0000-000000000007', 'rehabilitation', 'Phục hồi chức năng', NULL, '30000000-0000-0000-0000-000000000007', FALSE),
+                            ('20000000-0000-0000-0000-000000000008', 'wellness', 'Dưỡng sinh', NULL, '30000000-0000-0000-0000-000000000008', FALSE)
+                        ON CONFLICT ("Code") DO NOTHING;
+                    END IF;
+                END $$;
+                """);
+
             migrationBuilder.Sql("UPDATE \"PortalApp\" SET \"Category\" = CASE WHEN \"Platform\" = 'system' THEN 'rehabilitation' ELSE 'wellness' END WHERE \"Category\" = 'general'");
             migrationBuilder.Sql("UPDATE \"NewsArticle\" SET \"Department\" = 'rehabilitation' WHERE \"Department\" = 'general'");
 
