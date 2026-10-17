@@ -104,6 +104,15 @@ public class AccountsController(IAccountService accountService, IMemoryCache cac
             Request.Headers.UserAgent.ToString(),
             HttpContext.Connection.RemoteIpAddress?.ToString(),
             cancellationToken);
+        if (login is null)
+        {
+            return Unauthorized(new ApiResponse<LoginResponse>
+            {
+                StatusCode = StatusCodes.Status401Unauthorized,
+                Success = false,
+                Message = "Tên đăng nhập hoặc mật khẩu không đúng, hoặc tài khoản đã bị khóa."
+            });
+        }
         HttpContext.Items["AuthenticatedUserId"] = login.Account.Id;
 
         return Ok(new ApiResponse<LoginResponse>

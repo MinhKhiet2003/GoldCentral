@@ -44,21 +44,21 @@ public partial class AccountService(
         return UserResponse.From(account);
     }
 
-    public async Task<LoginResponse> LoginAsync(LoginRequest request, string? deviceName, string? ipAddress, CancellationToken cancellationToken)
+    public async Task<LoginResponse?> LoginAsync(LoginRequest request, string? deviceName, string? ipAddress, CancellationToken cancellationToken)
     {
         var username = request.Username.Trim().ToLowerInvariant();
         var account = await repository.FindByUsernameAsync(username, cancellationToken);
 
         if (account is null || !account.IsActive)
         {
-            throw new ApiException(401, "Tên đăng nhập hoặc mật khẩu không đúng, hoặc tài khoản đã bị khóa.");
+            return null;
         }
 
         var verificationResult = passwordHasher.VerifyHashedPassword(account, account.PasswordHash, request.Password);
 
         if (verificationResult == PasswordVerificationResult.Failed)
         {
-            throw new ApiException(401, "Tên đăng nhập hoặc mật khẩu không đúng, hoặc tài khoản đã bị khóa.");
+            return null;
         }
 
         if (verificationResult == PasswordVerificationResult.SuccessRehashNeeded)
