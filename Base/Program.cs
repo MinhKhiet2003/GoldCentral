@@ -24,6 +24,7 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton(TimeProvider.System);
 var webRoot = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
 Directory.CreateDirectory(Path.Combine(webRoot, "uploads"));
 builder.Environment.WebRootPath = webRoot;
@@ -31,6 +32,11 @@ builder.Environment.WebRootFileProvider = new Microsoft.Extensions.FileProviders
 
 builder.Services.AddScoped<AuditContext>();
 builder.Services.AddApiPresentation();
+builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IPortalRepository, PortalRepository>();
+builder.Services.AddScoped<IPortalService, PortalService>();
+builder.Services.AddScoped<INewsRepository, NewsRepository>();
+builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
@@ -252,6 +258,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Path.Combine(webRoot, "uploads")),

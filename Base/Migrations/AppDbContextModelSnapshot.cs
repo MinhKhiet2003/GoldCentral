@@ -124,6 +124,67 @@ namespace Base.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Base.Entities.NewsArticle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(30000)
+                        .HasColumnType("character varying(30000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("character varying(400)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("ViewCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Department", "IsPublished");
+
+                    b.HasIndex("IsPublished", "PublishedAt");
+
+                    b.ToTable("NewsArticle", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_NewsArticle_Department", "\"Department\" IN ('all', 'vaccination', 'dermatology', 'general', 'office')");
+
+                            t.HasCheckConstraint("CK_NewsArticle_ViewCount", "\"ViewCount\" >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Base.Entities.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -288,6 +349,207 @@ namespace Base.Migrations
                         {
                             Code = "dashboard.read",
                             Name = "Xem dashboard"
+                        });
+                });
+
+            modelBuilder.Entity("Base.Entities.PortalApp", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<long>("Clicks")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L);
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("character varying(400)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("IsFeatured")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsVisible")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Url")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category", "Platform");
+
+                    b.HasIndex("IsVisible", "Order");
+
+                    b.ToTable("PortalApp", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PortalApp_Category", "\"Category\" IN ('vaccination', 'dermatology', 'general', 'office')");
+
+                            t.HasCheckConstraint("CK_PortalApp_Clicks", "\"Clicks\" >= 0");
+
+                            t.HasCheckConstraint("CK_PortalApp_Order", "\"Order\" BETWEEN 0 AND 10000");
+
+                            t.HasCheckConstraint("CK_PortalApp_Platform", "\"Platform\" IN ('system', 'facebook', 'zalo', 'tiktok', 'youtube', 'website')");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+                            Category = "vaccination",
+                            Clicks = 0L,
+                            Description = "Quản lý lịch tiêm, hồ sơ khách hàng và dịch vụ tiêm chủng.",
+                            IsFeatured = false,
+                            IsVisible = true,
+                            Name = "Gold Tiêm chủng",
+                            Order = 0,
+                            Platform = "system"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000002"),
+                            Category = "dermatology",
+                            Clicks = 0L,
+                            Description = "Kết nối hệ thống chăm sóc da và điều trị da liễu.",
+                            IsFeatured = false,
+                            IsVisible = true,
+                            Name = "Gold Da liễu",
+                            Order = 1,
+                            Platform = "system"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000003"),
+                            Category = "general",
+                            Clicks = 0L,
+                            Description = "Quản lý khám chữa bệnh và chăm sóc sức khỏe toàn diện.",
+                            IsFeatured = false,
+                            IsVisible = true,
+                            Name = "Gold Phòng khám",
+                            Order = 2,
+                            Platform = "system"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000004"),
+                            Category = "office",
+                            Clicks = 0L,
+                            Description = "Không gian làm việc, tài liệu và phối hợp giữa các phòng ban.",
+                            IsFeatured = false,
+                            IsVisible = true,
+                            Name = "Gold Văn phòng",
+                            Order = 3,
+                            Platform = "system"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000005"),
+                            Category = "vaccination",
+                            Clicks = 0L,
+                            Description = "Cập nhật kiến thức vắc xin và hoạt động tại trung tâm.",
+                            IsFeatured = false,
+                            IsVisible = true,
+                            Name = "Tiêm chủng Gold Ninh Bình",
+                            Order = 4,
+                            Platform = "facebook"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000006"),
+                            Category = "dermatology",
+                            Clicks = 0L,
+                            Description = "Chia sẻ hành trình chăm sóc da và những câu chuyện làm đẹp.",
+                            IsFeatured = false,
+                            IsVisible = true,
+                            Name = "Gold Skin & Beauty",
+                            Order = 5,
+                            Platform = "facebook"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000007"),
+                            Category = "general",
+                            Clicks = 0L,
+                            Description = "Kết nối khách hàng, tư vấn và cập nhật thông tin dịch vụ.",
+                            IsFeatured = false,
+                            IsVisible = true,
+                            Name = "Gold Ninh Bình Official",
+                            Order = 6,
+                            Platform = "zalo"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000008"),
+                            Category = "general",
+                            Clicks = 0L,
+                            Description = "Khám phá kiến thức sức khỏe qua những video ngắn.",
+                            IsFeatured = false,
+                            IsVisible = true,
+                            Name = "Một phút khỏe cùng Gold",
+                            Order = 7,
+                            Platform = "tiktok"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000009"),
+                            Category = "general",
+                            Clicks = 0L,
+                            Description = "Video tư vấn chuyên gia và hoạt động trong hệ sinh thái Gold.",
+                            IsFeatured = false,
+                            IsVisible = true,
+                            Name = "Y tế Toàn Cầu Gold",
+                            Order = 8,
+                            Platform = "youtube"
+                        });
+                });
+
+            modelBuilder.Entity("Base.Entities.PortalAppDailyClick", b =>
+                {
+                    b.Property<Guid>("AppId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<long>("Clicks")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("AppId", "Date");
+
+                    b.HasIndex("Date");
+
+                    b.ToTable("PortalAppDailyClick", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PortalAppDailyClick_Clicks", "\"Clicks\" > 0");
                         });
                 });
 
@@ -674,6 +936,15 @@ namespace Base.Migrations
                     b.HasIndex("UploadedBy");
 
                     b.ToTable("UploadedFile", (string)null);
+                });
+
+            modelBuilder.Entity("Base.Entities.PortalAppDailyClick", b =>
+                {
+                    b.HasOne("Base.Entities.PortalApp", null)
+                        .WithMany()
+                        .HasForeignKey("AppId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Base.Entities.RolePermission", b =>

@@ -30,8 +30,56 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
 
+    public DbSet<PortalApp> PortalApps => Set<PortalApp>();
+    public DbSet<PortalAppDailyClick> PortalAppDailyClicks => Set<PortalAppDailyClick>();
+    public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        var news = modelBuilder.Entity<NewsArticle>();
+        news.ToTable("NewsArticle", table =>
+        {
+            table.HasCheckConstraint("CK_NewsArticle_Department", "\"Department\" IN ('all', 'vaccination', 'dermatology', 'general', 'office')");
+            table.HasCheckConstraint("CK_NewsArticle_ViewCount", "\"ViewCount\" >= 0");
+        });
+        news.HasKey(a => a.Id);
+        news.Property(a => a.Title).HasMaxLength(160).IsRequired();
+        news.Property(a => a.Summary).HasMaxLength(400).IsRequired();
+        news.Property(a => a.Content).HasMaxLength(30000).IsRequired();
+        news.Property(a => a.ImageUrl).HasMaxLength(2000);
+        news.Property(a => a.Department).HasMaxLength(30).IsRequired();
+        news.Property(a => a.ViewCount).HasDefaultValue(0L);
+        news.HasIndex(a => new { a.IsPublished, a.PublishedAt });
+        news.HasIndex(a => new { a.Department, a.IsPublished });
+        var portalApp = modelBuilder.Entity<PortalApp>();
+        portalApp.ToTable("PortalApp", table =>
+        {
+            table.HasCheckConstraint("CK_PortalApp_Category", "\"Category\" IN ('vaccination', 'dermatology', 'general', 'office')");
+            table.HasCheckConstraint("CK_PortalApp_Platform", "\"Platform\" IN ('system', 'facebook', 'zalo', 'tiktok', 'youtube', 'website')");
+            table.HasCheckConstraint("CK_PortalApp_Order", "\"Order\" BETWEEN 0 AND 10000");
+            table.HasCheckConstraint("CK_PortalApp_Clicks", "\"Clicks\" >= 0");
+        });
+        portalApp.HasKey(item => item.Id);
+        portalApp.Property(item => item.Name).HasMaxLength(100).IsRequired();
+        portalApp.Property(item => item.Description).HasMaxLength(400).IsRequired();
+        portalApp.Property(item => item.Category).HasMaxLength(30).IsRequired();
+        portalApp.Property(item => item.Platform).HasMaxLength(20).IsRequired();
+        portalApp.Property(item => item.Url).HasMaxLength(2000);
+        portalApp.Property(item => item.ImageUrl).HasMaxLength(2000);
+        portalApp.Property(item => item.IsVisible).HasDefaultValue(true);
+        portalApp.Property(item => item.Clicks).HasDefaultValue(0L);
+        portalApp.Property(item => item.IsFeatured).HasDefaultValue(false);
+        portalApp.HasIndex(item => new { item.IsVisible, item.Order });
+        portalApp.HasIndex(item => new { item.Category, item.Platform });
+        portalApp.HasData(PortalAppSeed.Items());
+
+        var dailyClick = modelBuilder.Entity<PortalAppDailyClick>();
+        dailyClick.ToTable("PortalAppDailyClick", table =>
+            table.HasCheckConstraint("CK_PortalAppDailyClick_Clicks", "\"Clicks\" > 0"));
+        dailyClick.HasKey(item => new { item.AppId, item.Date });
+        dailyClick.HasIndex(item => item.Date);
+        dailyClick.HasOne<PortalApp>().WithMany().HasForeignKey(item => item.AppId).OnDelete(DeleteBehavior.Cascade);
+
         var account = modelBuilder.Entity<Account>();
 
         account.ToTable("User", table =>
