@@ -1,7 +1,7 @@
 'use strict';
 const n$=s=>document.querySelector(s),articleId=document.body.dataset.articleId;
 const nEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const nDepartments={all:'Toàn công ty',vaccination:'Tiêm chủng',dermatology:'Da liễu & Thẩm mỹ',general:'Khám chữa bệnh',office:'Văn phòng & Nội bộ'};
+const nDepartments={all:'Toàn công ty',vaccination:'Tiêm chủng',dermatology:'Da liễu & Thẩm mỹ',rehabilitation:'Phục hồi chức năng',wellness:'Dưỡng sinh',office:'Văn phòng & Nội bộ'};
 const nDate=value=>new Date(value).toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'});
 const nEye='<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
 let newsPage=1,newsRequest=0;

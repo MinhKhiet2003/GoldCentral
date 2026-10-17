@@ -1,6 +1,6 @@
 'use strict';
 const previewEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const previewDepartments={all:'Toàn công ty',vaccination:'Tiêm chủng',dermatology:'Da liễu & Thẩm mỹ',general:'Khám chữa bệnh',office:'Văn phòng & Nội bộ'};
+const previewDepartments={all:'Toàn công ty',vaccination:'Tiêm chủng',dermatology:'Da liễu & Thẩm mỹ',rehabilitation:'Phục hồi chức năng',wellness:'Dưỡng sinh',office:'Văn phòng & Nội bộ'};
 const previewEye='<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
 const articlePopup=document.createElement('dialog');articlePopup.className='news-preview-dialog';articlePopup.setAttribute('aria-label','Đọc tin tức');
 articlePopup.innerHTML='<button type="button" class="preview-close" aria-label="Đóng bài viết" autofocus>×</button><div class="news-preview-content" aria-live="polite"></div>';document.body.append(articlePopup);

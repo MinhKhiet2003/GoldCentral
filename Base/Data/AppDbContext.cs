@@ -39,7 +39,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         var news = modelBuilder.Entity<NewsArticle>();
         news.ToTable("NewsArticle", table =>
         {
-            table.HasCheckConstraint("CK_NewsArticle_Department", "\"Department\" IN ('all', 'vaccination', 'dermatology', 'general', 'office')");
+            table.HasCheckConstraint("CK_NewsArticle_Department", "\"Department\" IN ('all', 'vaccination', 'dermatology', 'rehabilitation', 'wellness', 'office')");
             table.HasCheckConstraint("CK_NewsArticle_ViewCount", "\"ViewCount\" >= 0");
         });
         news.HasKey(a => a.Id);
@@ -54,7 +54,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         var portalApp = modelBuilder.Entity<PortalApp>();
         portalApp.ToTable("PortalApp", table =>
         {
-            table.HasCheckConstraint("CK_PortalApp_Category", "\"Category\" IN ('vaccination', 'dermatology', 'general', 'office')");
+            table.HasCheckConstraint("CK_PortalApp_Category", "\"Category\" IN ('vaccination', 'dermatology', 'rehabilitation', 'wellness', 'office')");
             table.HasCheckConstraint("CK_PortalApp_Platform", "\"Platform\" IN ('system', 'facebook', 'zalo', 'tiktok', 'youtube', 'website')");
             table.HasCheckConstraint("CK_PortalApp_Order", "\"Order\" BETWEEN 0 AND 10000");
             table.HasCheckConstraint("CK_PortalApp_Clicks", "\"Clicks\" >= 0");

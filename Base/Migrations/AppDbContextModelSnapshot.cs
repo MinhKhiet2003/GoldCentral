@@ -179,7 +179,7 @@ namespace Base.Migrations
 
                     b.ToTable("NewsArticle", null, t =>
                         {
-                            t.HasCheckConstraint("CK_NewsArticle_Department", "\"Department\" IN ('all', 'vaccination', 'dermatology', 'general', 'office')");
+                            t.HasCheckConstraint("CK_NewsArticle_Department", "\"Department\" IN ('all', 'vaccination', 'dermatology', 'rehabilitation', 'wellness', 'office')");
 
                             t.HasCheckConstraint("CK_NewsArticle_ViewCount", "\"ViewCount\" >= 0");
                         });
@@ -412,7 +412,7 @@ namespace Base.Migrations
 
                     b.ToTable("PortalApp", null, t =>
                         {
-                            t.HasCheckConstraint("CK_PortalApp_Category", "\"Category\" IN ('vaccination', 'dermatology', 'general', 'office')");
+                            t.HasCheckConstraint("CK_PortalApp_Category", "\"Category\" IN ('vaccination', 'dermatology', 'rehabilitation', 'wellness', 'office')");
 
                             t.HasCheckConstraint("CK_PortalApp_Clicks", "\"Clicks\" >= 0");
 
@@ -449,12 +449,12 @@ namespace Base.Migrations
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000003"),
-                            Category = "general",
+                            Category = "rehabilitation",
                             Clicks = 0L,
-                            Description = "Quản lý khám chữa bệnh và chăm sóc sức khỏe toàn diện.",
+                            Description = "Quản lý hoạt động phục hồi chức năng và chăm sóc sức khỏe.",
                             IsFeatured = false,
                             IsVisible = true,
-                            Name = "Gold Phòng khám",
+                            Name = "Gold Phục hồi chức năng",
                             Order = 2,
                             Platform = "system"
                         },
@@ -497,7 +497,7 @@ namespace Base.Migrations
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000007"),
-                            Category = "general",
+                            Category = "wellness",
                             Clicks = 0L,
                             Description = "Kết nối khách hàng, tư vấn và cập nhật thông tin dịch vụ.",
                             IsFeatured = false,
@@ -509,7 +509,7 @@ namespace Base.Migrations
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000008"),
-                            Category = "general",
+                            Category = "wellness",
                             Clicks = 0L,
                             Description = "Khám phá kiến thức sức khỏe qua những video ngắn.",
                             IsFeatured = false,
@@ -521,7 +521,7 @@ namespace Base.Migrations
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000009"),
-                            Category = "general",
+                            Category = "wellness",
                             Clicks = 0L,
                             Description = "Video tư vấn chuyên gia và hoạt động trong hệ sinh thái Gold.",
                             IsFeatured = false,

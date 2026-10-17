@@ -19,6 +19,8 @@ Check(entity.GetTableName() == "PortalApp", "PostgreSQL portal table mapping");
 Check(entity.GetSeedData().Count() == 9, "nine deterministic seed applications");
 Check(entity.FindProperty(nameof(PortalApp.Name))!.GetMaxLength() == 100, "name length constraint");
 Check(entity.GetCheckConstraints().Count() == 4, "category platform order and click constraints");
+var categoryConstraint = entity.GetCheckConstraints().Single(item => item.Name == "CK_PortalApp_Category").Sql!;
+Check(categoryConstraint.Contains("'rehabilitation'") && categoryConstraint.Contains("'wellness'") && !categoryConstraint.Contains("'general'"), "department categories split into rehabilitation and wellness");
 Check(entity.GetIndexes().Count() == 2, "directory query indexes");
 
 var repository = new FakePortalRepository();

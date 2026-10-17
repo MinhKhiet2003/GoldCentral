@@ -1,7 +1,7 @@
 'use strict';
 const $ = s => document.querySelector(s);
 const isAdmin = document.body.dataset.admin === 'true';
-const categories = {vaccination:'Tiêm chủng',dermatology:'Da liễu & Thẩm mỹ',general:'Khám chữa bệnh',office:'Văn phòng & Nội bộ'};
+const categories = {vaccination:'Tiêm chủng',dermatology:'Da liễu & Thẩm mỹ',rehabilitation:'Phục hồi chức năng',wellness:'Dưỡng sinh',office:'Văn phòng & Nội bộ'};
 const platforms = {system:'Hệ thống Gold',facebook:'Facebook',zalo:'Zalo',tiktok:'TikTok',youtube:'YouTube',website:'Website'};
 let apps = [], view = isAdmin?'manage':'home', token = '', refreshToken = '', deleteId = null, requestVersion = 0;
 function saveAdminSession(data){token=data.accessToken;refreshToken=data.refreshToken;try{sessionStorage.setItem('gold-admin-session',JSON.stringify({refreshToken,refreshTokenExpiresAt:data.refreshTokenExpiresAt}));}catch{}}
@@ -76,7 +76,7 @@ function card(a){const ready=Boolean(a.url&&a.isVisible);return `<article class=
  <div class="card-content"><h3>${esc(a.name)}</h3><p class="card-description">${esc(a.description)}</p>
  <div class="card-bottom">${platformBadge(a)}<span class="card-cta ${ready?'ready':''}">${ready?'Truy cập <span aria-hidden="true">↗</span>':'Chờ cấu hình'}</span></div>
  ${view==='manage'?`<div class="manage-meta">Thứ tự ${a.order} · ${a.clicks.toLocaleString('vi-VN')} lượt nhấp · ${a.isVisible?'Đang hiện':'Đang ẩn'}</div><div class="manage-actions"><button class="action-edit" data-action="edit" data-id="${a.id}" title="Chỉnh sửa ${esc(a.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-.8L19.2 8a2.12 2.12 0 0 0-3-3L5 16.2 4 20Z"/></svg><span>Sửa</span></button><button class="action-toggle" data-action="toggle" data-id="${a.id}" title="${a.isVisible?'Ẩn':'Hiện'} ${esc(a.name)}"><svg viewBox="0 0 24 24" aria-hidden="true">${a.isVisible?'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>':'<path d="m3 3 18 18M10.6 5.1A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3 3.8M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'}</svg><span>${a.isVisible?'Ẩn':'Hiện'}</span></button><button class="delete action-delete" data-action="delete" data-id="${a.id}" title="Xóa ${esc(a.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg><span>Xóa</span></button></div>`:''}</div></article>`;}
-function resetFilters(){ $('#search').value='';$('#category-filter').value='all';$('#platform-filter').value='all';catalogType='all';$('#catalog-platform-filter').value='all'; }
+function resetFilters(){ $('#search').value='';$('#category-filter').value='all';$('#platform-filter').value='all';catalogType='all';$('#catalog-platform-filter').value='all';$('#catalog-department-filter').value='all'; }
 function renderCatalog(matching){
  const department=$('#category-filter').value,platform=$('#catalog-platform-filter').value;
  const scoped=matching.filter(a=>department==='all'||a.category===department);
@@ -87,6 +87,7 @@ function renderCatalog(matching){
  $('#department-title').textContent=department==='all'?'Tất cả đơn vị':categories[department];
  $('#catalog-result-count').textContent=`${displayed.length} ứng dụng`;
  $('#catalog-platform-filter').hidden=catalogType!=='social';
+ $('#catalog-department-filter').hidden=catalogType!=='social';$('#catalog-department-filter').value=department;
  document.querySelectorAll('[data-department]').forEach(b=>{const active=b.dataset.department===department;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1;b.querySelector('span').textContent=matching.filter(a=>b.dataset.department==='all'||a.category===b.dataset.department).length;});
  $('#department-panel').setAttribute('aria-labelledby','department-'+department);
  document.querySelectorAll('[data-type]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.type===catalogType)));
@@ -146,7 +147,7 @@ document.querySelectorAll('.date-trigger').forEach(button=>button.addEventListen
 $('.stats-date-inputs').addEventListener('click',event=>{if(!openDatePicker)return;const shift=event.target.closest('[data-calendar-shift]');if(shift){renderDatePicker(openDatePicker,new Date(Date.UTC(Number(openDatePicker.dataset.calendarYear),Number(openDatePicker.dataset.calendarMonth)+Number(shift.dataset.calendarShift),1)));return;}const day=event.target.closest('[data-calendar-date]');if(day){const input=openDatePicker.querySelector('input[type=date]');input.value=day.dataset.calendarDate;closeDatePicker();input.dispatchEvent(new Event('change',{bubbles:true}));return;}if(event.target.closest('[data-calendar-today],[data-calendar-clear]')){const input=openDatePicker.querySelector('input[type=date]'),today=event.target.closest('[data-calendar-today]');input.value=today?todayVn():'';const changed=input.id.endsWith('from')?'from':'to';closeDatePicker();if(input.value)refreshDateBounds(changed);else{syncDateTriggers();load();}}});
 document.addEventListener('click',event=>{if(openDatePicker&&!event.target.closest('.date-field'))closeDatePicker();});
 $('.stats-date-presets').addEventListener('click',e=>{const preset=e.target.closest('[data-date-preset]')?.dataset.datePreset;if(!preset)return;const date=shiftDate(todayVn(),preset==='yesterday'?-1:0);$('#stats-date-from').value=date;$('#stats-date-to').value=date;refreshDateBounds('preset');});
-function selectDepartment(button){$('#category-filter').value=button.dataset.department;render();}
+function selectDepartment(button){$('#category-filter').value=button.dataset.department;$('#catalog-department-filter').value=button.dataset.department;render();}
 const departmentLayout=window.matchMedia('(min-width:1100px)');
 function updateDepartmentOrientation(){$('#department-tabs').setAttribute('aria-orientation',departmentLayout.matches?'vertical':'horizontal');}
 departmentLayout.addEventListener('change',updateDepartmentOrientation);updateDepartmentOrientation();
@@ -160,6 +161,7 @@ $('#department-tabs').addEventListener('keydown',e=>{
 });
 $('#type-filters').addEventListener('click',e=>{const button=e.target.closest('[data-type]');if(button){catalogType=button.dataset.type;render();}});
 $('#catalog-platform-filter').addEventListener('change',render);
+$('#catalog-department-filter').addEventListener('change',event=>{$('#category-filter').value=event.target.value;render();});
 async function handleCardAction(e){
  const b=e.target.closest('[data-action]');if(!b)return;const a=apps.find(x=>x.id===b.dataset.id),position=captureViewport();
  try{switch(b.dataset.action){

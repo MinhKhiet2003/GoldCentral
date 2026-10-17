@@ -5,7 +5,7 @@ public class PortalApp
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
-    public string Category { get; set; } = "general";
+    public string Category { get; set; } = "rehabilitation";
     public string Platform { get; set; } = "system";
     public string? Url { get; set; }
     public string? ImageUrl { get; set; }
