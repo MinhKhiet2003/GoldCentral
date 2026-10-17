@@ -4,10 +4,18 @@
 # Build artifacts
 **/bin/
 **/obj/
+/artifacts/
 
 # User-specific project settings
 *.csproj.user
 
+# Gold Central runtime data
+Base/App_Data/
+
 # User-uploaded runtime files; keep the placeholder rule
 Base/wwwroot/uploads/*
 !Base/wwwroot/uploads/.gitignore
+
+# Local secrets and developer-only configuration
+**/appsettings.Development.json
+**/appsettings.*.local.json
