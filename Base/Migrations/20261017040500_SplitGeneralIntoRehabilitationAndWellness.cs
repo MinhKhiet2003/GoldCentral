@@ -11,13 +11,8 @@ namespace Base.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_PortalApp_Category",
-                table: "PortalApp");
-
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_NewsArticle_Department",
-                table: "NewsArticle");
+            migrationBuilder.Sql("ALTER TABLE \"PortalApp\" DROP CONSTRAINT IF EXISTS \"CK_PortalApp_Category\"");
+            migrationBuilder.Sql("ALTER TABLE \"NewsArticle\" DROP CONSTRAINT IF EXISTS \"CK_NewsArticle_Department\"");
 
             migrationBuilder.Sql("UPDATE \"PortalApp\" SET \"Category\" = CASE WHEN \"Platform\" = 'system' THEN 'rehabilitation' ELSE 'wellness' END WHERE \"Category\" = 'general'");
             migrationBuilder.Sql("UPDATE \"NewsArticle\" SET \"Department\" = 'rehabilitation' WHERE \"Department\" = 'general'");
@@ -64,13 +59,8 @@ namespace Base.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_PortalApp_Category",
-                table: "PortalApp");
-
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_NewsArticle_Department",
-                table: "NewsArticle");
+            migrationBuilder.Sql("ALTER TABLE \"PortalApp\" DROP CONSTRAINT IF EXISTS \"CK_PortalApp_Category\"");
+            migrationBuilder.Sql("ALTER TABLE \"NewsArticle\" DROP CONSTRAINT IF EXISTS \"CK_NewsArticle_Department\"");
 
             migrationBuilder.Sql("UPDATE \"PortalApp\" SET \"Category\" = 'general' WHERE \"Category\" IN ('rehabilitation', 'wellness')");
             migrationBuilder.Sql("UPDATE \"NewsArticle\" SET \"Department\" = 'general' WHERE \"Department\" IN ('rehabilitation', 'wellness')");
