@@ -200,6 +200,23 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+if (app.Configuration.GetValue("Database:ApplyMigrations", true))
+{
+    await using var migrationScope = app.Services.CreateAsyncScope();
+    var db = migrationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        app.Logger.LogInformation("Applying pending database migrations.");
+        await db.Database.MigrateAsync();
+        app.Logger.LogInformation("Database migrations are up to date.");
+    }
+    catch (Exception exception)
+    {
+        app.Logger.LogCritical(exception, "Database migration failed; application startup is stopping.");
+        throw;
+    }
+}
+
 app.UseMiddleware<SystemLogMiddleware>();
 
 app.UseExceptionHandler(new ExceptionHandlerOptions

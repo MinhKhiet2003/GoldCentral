@@ -324,10 +324,12 @@ dotnet ef database update --project .\Base\Base\Base.csproj
 dotnet run --project .\Base\Base\Base.csproj --launch-profile https
 ```
 
-Cấu hình `ConnectionStrings:DefaultConnection` trong `Base/Base/appsettings.json` hoặc biến môi trường
-trước khi chạy migration. Không tự động áp dụng migration khi ứng dụng khởi động.
-`database update` áp dụng toàn bộ migration còn thiếu, bao gồm bảng nền cho tài khoản/đăng nhập
-và bảng PortalApp. Database mới nhận 9 thẻ mẫu với URL để trống.
+Cấu hình `ConnectionStrings:DefaultConnection` bằng biến môi trường hoặc User Secrets trước khi chạy.
+Mặc định ứng dụng không tự thay đổi schema. Có thể bật áp dụng migration còn thiếu khi khởi động bằng
+`Database:ApplyMigrations=true`. Trên MonsterASP, cấu hình `ConnectionStrings__DefaultConnection` và
+`Database__ApplyMigrations=true` trong biến môi trường của ứng dụng; database phải được tạo sẵn và tài khoản
+cần quyền tạo/sửa bảng. Database mới nhận 9 thẻ mẫu với URL để trống. Khi bật mà migration lỗi, ứng dụng
+ghi lỗi mức Critical và dừng khởi động để tránh chạy với schema thiếu.
 
 Profile `https`: https://localhost:7088 (giao diện), https://localhost:7088/swagger (API), kèm HTTP 5088.
 Profile `http`: http://localhost:5088. Cổng 7015 đã được thay trong launchSettings.json.
