@@ -70,7 +70,7 @@ function platformBadge(a){
  const label=platforms[a.platform]||(a.platform==='instagram'?'Instagram':a.platform);
  return `<span class="platform-mark" role="img" aria-label="${esc(label)}" title="${esc(label)}">${platformIcons[a.platform]||'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 15 6-6m-8 3-2 2a4 4 0 0 0 6 6l3-3m-2-10 2-2a4 4 0 0 1 6 6l-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'}</span>`;
 }
-function card(a){const ready=Boolean(a.url&&a.isVisible);return `<article class="app-card ${!ready?'unconfigured':''}" data-app-id="${a.id}">
+function card(a){const ready=Boolean(a.url&&a.isVisible);return `<article class="app-card platform-${esc(a.platform)} ${!ready?'unconfigured':''}" data-app-id="${a.id}">
  ${ready?`<button class="card-link" data-action="visit" data-id="${a.id}" aria-label="Truy cập ${esc(a.name)} (mở trong tab mới)" title="${esc(a.name)} · ${esc(platforms[a.platform]||a.platform)}"></button>`:''}
  <div class="card-media ${a.imageUrl?'has-image':''}">${a.imageUrl?`<img class="cover-image" src="${esc(a.imageUrl)}" alt="" loading="lazy">`:fallbackMedia()}<button class="favorite ${favorites.has(a.id)?'on':''}" data-action="favorite" data-id="${a.id}" aria-label="${favorites.has(a.id)?'Bỏ yêu thích':'Thêm yêu thích'} ${esc(a.name)}" aria-pressed="${favorites.has(a.id)}">${favorites.has(a.id)?'♥':'♡'}</button></div>
  <div class="card-content"><h3>${esc(a.name)}</h3><p class="card-description">${esc(a.description)}</p>
