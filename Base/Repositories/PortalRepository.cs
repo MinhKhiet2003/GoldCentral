@@ -15,16 +15,36 @@ public sealed class PortalRepository(AppDbContext db) : IPortalRepository
     public Task<PortalApp?> GetAsync(Guid id, CancellationToken ct) => db.PortalApps
         .SingleOrDefaultAsync(item => item.Id == id, ct);
 
-    public async Task AddAsync(PortalApp item, CancellationToken ct)
+    public async Task SaveWithOrderAsync(PortalApp item, int position, CancellationToken ct)
     {
-        db.PortalApps.Add(item);
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var ordered = await db.PortalApps.OrderBy(app => app.Order).ThenBy(app => app.Name).ToListAsync(ct);
+        var current = ordered.FindIndex(app => app.Id == item.Id);
+        if (current >= 0) ordered.RemoveAt(current);
+        var targetIndex = Math.Clamp(position - 1, 0, ordered.Count);
+        ordered.Insert(targetIndex, item);
+        for (var index = 0; index < ordered.Count; index++)
+            ordered[index].Order = index;
+
+        if (current < 0) db.PortalApps.Add(item);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
     }
 
-    public async Task SaveAsync(CancellationToken ct) => await db.SaveChangesAsync(ct);
-
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct) => await db.PortalApps
-        .Where(item => item.Id == id).ExecuteDeleteAsync(ct) > 0;
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var ordered = await db.PortalApps.OrderBy(app => app.Order).ThenBy(app => app.Name).ToListAsync(ct);
+        var item = ordered.FirstOrDefault(app => app.Id == id);
+        if (item is null) return false;
+        ordered.Remove(item);
+        db.PortalApps.Remove(item);
+        for (var index = 0; index < ordered.Count; index++)
+            ordered[index].Order = index;
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return true;
+    }
 
     // Increment in SQL, preserving clicks across concurrent requests and multiple server instances.
     // Match the URL and visibility again to avoid counting a stale/hidden link.

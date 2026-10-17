@@ -13,7 +13,7 @@ public class PortalService(IPortalRepository repository, TimeProvider clock) : I
     {
         Id = item.Id, Name = item.Name, Description = item.Description, Category = item.Category,
         Platform = item.Platform, Url = item.Url, ImageUrl = item.ImageUrl,
-        IsVisible = item.IsVisible, IsFeatured = item.IsFeatured, Order = item.Order, Clicks = item.Clicks
+        IsVisible = item.IsVisible, IsFeatured = item.IsFeatured, Order = item.Order + 1, Clicks = item.Clicks
     };
     public async Task<List<PortalAppResponse>> ListAsync(bool includeHidden, CancellationToken ct) =>
         (await repository.ListAsync(includeHidden, ct)).Select(Map).ToList(); 
@@ -32,10 +32,9 @@ public class PortalService(IPortalRepository repository, TimeProvider clock) : I
         if (string.IsNullOrWhiteSpace(request.Name)) throw new ApiException(400, "Vui lòng nhập tên ứng dụng.");
         var item = id is null ? new PortalApp() : await repository.GetAsync(id.Value, ct) ?? throw new ApiException(404, "Không tìm thấy ứng dụng.");
         item.Name = request.Name.Trim(); item.Description = request.Description?.Trim() ?? ""; item.Category = request.Category;
-        item.Platform = request.Platform; item.Url = url; item.ImageUrl = image; item.IsVisible = request.IsVisible; item.Order = request.Order;
+        item.Platform = request.Platform; item.Url = url; item.ImageUrl = image; item.IsVisible = request.IsVisible;
         item.IsFeatured = request.IsFeatured;
-        if (id is null) await repository.AddAsync(item, ct);
-        else await repository.SaveAsync(ct);
+        await repository.SaveWithOrderAsync(item, Math.Max(1, request.Order), ct);
         return Map(item);
     }
     public Task<bool> DeleteAsync(Guid id, CancellationToken ct) => repository.DeleteAsync(id, ct);

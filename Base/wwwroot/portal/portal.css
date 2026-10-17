@@ -85,3 +85,13 @@ body.login-only>.site-header,body.login-only footer,body.login-only #portal-cont
 #stats-range{padding-left:2px!important;color:#7f8e77;font-size:10px}
 @media(max-width:900px){.stats-date-control{gap:12px}.stats-date-title{flex-basis:100%}.stats-date-presets{margin-left:0}}
 @media(max-width:600px){.stats-period{gap:11px;padding:15px}.stats-date-control{display:grid!important;grid-template-columns:minmax(0,1fr);gap:11px}.stats-date-title{flex-basis:auto}.stats-date-inputs{display:grid;grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr);gap:7px;width:100%}.stats-period .date-field{flex-basis:auto;width:100%}.stats-period .date-field input{height:43px;padding:0 8px;font-size:12px}.date-separator{padding-top:14px;text-align:center}.stats-date-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}.stats-date-presets button{width:100%;min-width:0}#stats-range{line-height:1.5}}
+.manage-actions{align-items:center;gap:8px;padding:4px 0 17px}
+.manage-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:0 11px;border:1px solid #e2e9e1;border-radius:8px;background:linear-gradient(180deg,#fff,#f8faf7);color:#55745d;font-size:11px;font-weight:600;box-shadow:0 1px 2px #17331a08;transition:background .16s,border-color .16s,color .16s,box-shadow .16s,transform .16s}
+.manage-actions button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.manage-actions button:hover:not(:disabled){filter:none;background:#edf5ed;border-color:#b9d0bc;color:#087542;box-shadow:0 3px 9px #17331a10;transform:translateY(-1px)}
+.manage-actions button:active:not(:disabled){transform:translateY(0)}
+.manage-actions button.action-toggle{color:#8a7136;background:#fffdf6;border-color:#eee7d1}
+.manage-actions button.action-toggle:hover:not(:disabled){background:#fbf4df;border-color:#e4d6a7;color:#80631e}
+.manage-actions button.action-delete{margin-left:auto;color:#a85e58;background:#fffafa;border-color:#f0dfdc}
+.manage-actions button.action-delete:hover:not(:disabled){background:#fff0ee;border-color:#e5bbb5;color:#a33730}
+@media(max-width:600px){.manage-actions{gap:6px}.manage-actions button{flex:1;gap:5px;padding:0 8px;font-size:10px}.manage-actions button.action-delete{margin-left:auto;flex:0 0 auto}}

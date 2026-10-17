@@ -48,6 +48,16 @@ try { await service.VisitAsync(app.Id, ct); throw new Exception("Stale visit all
 catch (ApiException e) when (e.StatusCode == 409) { Console.WriteLine("PASS concurrent link change handled"); }
 Check(await service.DeleteAsync(app.Id, ct), "delete application");
 
+var orderOne = await service.SaveAsync(null, new PortalAppRequest { Name = "Hệ thống 1", Order = 1 }, ct);
+var orderTwo = await service.SaveAsync(null, new PortalAppRequest { Name = "Hệ thống 2", Order = 2 }, ct);
+var orderThree = await service.SaveAsync(null, new PortalAppRequest { Name = "Hệ thống 3", Order = 3 }, ct);
+await service.SaveAsync(orderThree.Id, new PortalAppRequest { Name = "Hệ thống 3", Order = 1 }, ct);
+var reordered = await service.ListAsync(true, ct);
+Check(reordered.Select(x => x.Name).SequenceEqual(["Hệ thống 3", "Hệ thống 1", "Hệ thống 2"]), "moving an app to position one shifts following apps down");
+Check(reordered.Select(x => x.Order).SequenceEqual([1, 2, 3]), "reordered apps have consecutive positions");
+Check(await service.DeleteAsync(orderOne.Id, ct), "delete reorders remaining applications");
+Check((await service.ListAsync(true, ct)).Select(x => x.Order).SequenceEqual([1, 2]), "delete closes the order gap");
+
 Check(PortalReportingCalendar.VietnamDate(DateTimeOffset.Parse("2026-09-30T16:59:59Z")) == new DateOnly(2026,9,30), "Vietnam date before local midnight");
 Check(PortalReportingCalendar.VietnamDate(DateTimeOffset.Parse("2026-09-30T17:00:00Z")) == new DateOnly(2026,10,1), "Vietnam date after local midnight");
 var sunday = PortalReportingCalendar.Periods(new DateOnly(2026,10,4));
@@ -74,9 +84,21 @@ sealed class FakePortalRepository : IPortalRepository
     public bool RejectIncrement { get; set; }
     public Task<List<PortalApp>> ListAsync(bool includeHidden, CancellationToken ct) => Task.FromResult(Items.Where(x => includeHidden || x.IsVisible).OrderBy(x => x.Order).ToList());
     public Task<PortalApp?> GetAsync(Guid id, CancellationToken ct) => Task.FromResult(Items.SingleOrDefault(x => x.Id == id));
-    public Task AddAsync(PortalApp item, CancellationToken ct) { Items.Add(item); return Task.CompletedTask; }
-    public Task SaveAsync(CancellationToken ct) => Task.CompletedTask;
-    public Task<bool> DeleteAsync(Guid id, CancellationToken ct) => Task.FromResult(Items.RemoveAll(x => x.Id == id) > 0);
+    public Task SaveWithOrderAsync(PortalApp item, int position, CancellationToken ct)
+    {
+        Items.RemoveAll(x => x.Id == item.Id);
+        var index = Math.Clamp(position - 1, 0, Items.Count);
+        Items.Insert(index, item);
+        for (var i = 0; i < Items.Count; i++) Items[i].Order = i;
+        return Task.CompletedTask;
+    }
+    public Task<bool> DeleteAsync(Guid id, CancellationToken ct)
+    {
+        var removed = Items.RemoveAll(x => x.Id == id) > 0;
+        var ordered = Items.OrderBy(x => x.Order).ThenBy(x => x.Name).ToList();
+        for (var i = 0; i < ordered.Count; i++) ordered[i].Order = i;
+        return Task.FromResult(removed);
+    }
     public Task<bool> IncrementClicksAsync(Guid id, string url, DateOnly date, CancellationToken ct)
     {
         var item = Items.SingleOrDefault(x => x.Id == id && x.Url == url && x.IsVisible);
