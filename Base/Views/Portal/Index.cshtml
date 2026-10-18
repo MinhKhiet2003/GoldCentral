@@ -3,9 +3,9 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#087542">
-<title>Gold · Cổng truy cập hệ sinh thái</title><link rel="stylesheet" href="/portal/portal.css?v=30">
+<title>Gold · Cổng truy cập hệ sinh thái</title><link rel="stylesheet" href="/portal/portal.css?v=39">
 </head>
-<body class="@(isAdmin ? "login-only" : "")" data-admin="@(isAdmin ? "true" : "false")">
+<body class="@(isAdmin ? "login-only" : "")" data-admin="@(isAdmin ? "true" : "false")" data-event-theme="october20">
 <header class="site-header"><div class="header-inner">
 <a class="brand" href="/" aria-label="Gold — Trang chủ"><span class="gold-logo"><img src="/portal/gold-logo.png" alt="Gold"></span><span class="brand-caption">Y TẾ TOÀN CẦU<span>Cổng truy cập hệ sinh thái</span></span></a>
 @if (isAdmin)
@@ -17,16 +17,31 @@ else
 <nav class="top-navigation" aria-label="Điều hướng chính"><a class="active" href="/" aria-current="page">Trang chủ</a><a href="/news">Tin tức</a></nav>
 }
 </div></header>
+<div class="blossom-scene" aria-hidden="true">
+<i style="--x:4%;--drift:11vw;--duration:18s;--delay:-12s;--size:13px"></i><i style="--x:11%;--drift:-8vw;--duration:22s;--delay:-5s;--size:10px"></i><i style="--x:19%;--drift:14vw;--duration:19s;--delay:-16s;--size:15px"></i><i style="--x:27%;--drift:-12vw;--duration:25s;--delay:-9s;--size:11px"></i><i style="--x:35%;--drift:9vw;--duration:20s;--delay:-2s;--size:12px"></i><i style="--x:43%;--drift:-14vw;--duration:23s;--delay:-18s;--size:14px"></i><i style="--x:52%;--drift:12vw;--duration:18s;--delay:-7s;--size:10px"></i><i style="--x:61%;--drift:-9vw;--duration:24s;--delay:-14s;--size:13px"></i><i style="--x:69%;--drift:15vw;--duration:21s;--delay:-4s;--size:11px"></i><i style="--x:77%;--drift:-13vw;--duration:19s;--delay:-11s;--size:15px"></i><i style="--x:85%;--drift:10vw;--duration:26s;--delay:-20s;--size:12px"></i><i style="--x:94%;--drift:-11vw;--duration:20s;--delay:-8s;--size:14px"></i>
+</div>
 <main class="page">
+<div class="october-banner" id="event-banner" aria-label="Chủ đề sự kiện trên cổng Gold" hidden><span class="event-character" id="event-character" aria-hidden="true">🌸</span><span class="event-banner-copy"><strong id="event-banner-title">Chào mừng ngày Phụ nữ Việt Nam 20/10</strong><small id="event-banner-description">Gold trân trọng gửi lời chúc tốt đẹp đến một nửa yêu thương</small></span><span class="october-flower october-flower-end" aria-hidden="true">✿</span><img id="event-character-art" class="event-character-art" src="data:," alt="" aria-hidden="true" hidden></div>
 <section id="login-panel" class="login-panel" hidden>
 <form id="login-form"><span class="eyebrow">GOLD CENTRAL · QUẢN TRỊ</span><h1>Đăng nhập quản trị</h1><p class="hint">Quản lý các kết nối trong hệ sinh thái Gold.</p><label>Tên đăng nhập<input name="username" required autocomplete="username" placeholder="Nhập tên đăng nhập"></label><label>Mật khẩu<input type="password" name="password" required autocomplete="current-password" placeholder="Nhập mật khẩu"></label><p id="login-error" class="error" role="alert" tabindex="-1"></p><button class="primary" type="submit">Đăng nhập <span>→</span></button></form>
 </section>
 <div id="portal-content" hidden>
-<nav class="admin-nav" id="admin-nav" aria-label="Điều hướng quản trị" hidden><button class="active" data-view="manage">Quản lý ứng dụng</button><button data-view="stats">Thống kê truy cập</button><button data-view="news">Quản lý tin tức</button></nav>
+<nav class="admin-nav" id="admin-nav" aria-label="Điều hướng quản trị" hidden><button class="active" data-view="manage">Quản lý ứng dụng</button><button data-view="stats">Thống kê truy cập</button><button data-view="news">Quản lý tin tức</button><button data-view="settings">Cài đặt sự kiện</button></nav>
 <section id="news-admin-panel" hidden>
 <div class="welcome"><div><p class="eyebrow">GOLD CENTRAL · TIN TỨC NỘI BỘ</p><h1>Quản lý tin tức</h1><p>Soạn bài, cập nhật thông tin và xuất bản đến nhân viên.</p></div><button class="primary" id="add-news">＋ Viết bài mới</button></div>
 <div class="news-admin-tools"><label class="search"><input id="news-admin-search" aria-label="Tìm bài viết quản trị" placeholder="Tìm tiêu đề, nội dung tóm tắt..."></label><select id="news-admin-status" aria-label="Trạng thái bài viết"><option value="">Tất cả trạng thái</option><option value="true">Đã xuất bản</option><option value="false">Bản nháp / Đang ẩn</option></select></div>
 <div id="news-admin-results" aria-live="polite"></div><div class="news-pagination" id="news-admin-pagination"></div>
+</section>
+<section id="event-settings-panel" class="event-settings-panel" hidden aria-labelledby="event-settings-title">
+<div class="welcome"><div><p class="eyebrow">GOLD CENTRAL · GIAO DIỆN</p><h1 id="event-settings-title">Cài đặt sự kiện</h1><p>Chọn chủ đề theo dịp lễ để làm mới cổng hệ sinh thái Gold.</p></div></div>
+<form id="event-settings-form" class="event-settings-card">
+<div class="event-settings-intro"><span class="event-settings-icon" aria-hidden="true">✧</span><div><h2>Chủ đề theo sự kiện</h2><p>Hiệu ứng sẽ áp dụng cho trang chủ của toàn bộ nhân viên sau khi lưu.</p></div></div>
+<div class="event-settings-controls"><div class="event-setting-field"><span class="event-setting-label">Trạng thái hiệu ứng</span><button type="button" id="event-enabled" class="event-toggle" aria-pressed="true"><span class="event-toggle-track"><span></span></span><span id="event-enabled-label">Đang bật</span></button></div>
+<label class="event-setting-field" for="event-key"><span class="event-setting-label">Chọn sự kiện</span><select id="event-key" name="eventKey"><option value="october20">Ngày Phụ nữ Việt Nam · 20/10</option><option value="halloween">Halloween · 31/10</option><option value="christmas">Giáng sinh · 24–25/12</option><option value="new-year">Tết Dương lịch · 01/01</option><option value="none">Không dùng chủ đề sự kiện</option></select></label></div>
+<div class="event-copy-fields"><label for="event-title-text">Tiêu đề hiển thị<input id="event-title-text" name="title" maxlength="100" required placeholder="Nhập tiêu đề cho sự kiện"></label><label for="event-description-text">Lời chúc / nội dung<textarea id="event-description-text" name="description" maxlength="300" rows="2" required placeholder="Nhập nội dung hiển thị trên banner"></textarea></label></div>
+<div id="event-settings-preview" class="event-settings-preview"><span class="event-settings-preview-icon" aria-hidden="true">✿</span><div><b id="event-preview-title">Chủ đề 20/10</b><small id="event-preview-copy">Hoa anh đào rơi, ánh hồng và vàng Gold.</small></div><span class="event-preview-badge">Xem trước</span><img id="event-preview-art" class="event-preview-art" src="data:," alt="" aria-hidden="true" hidden></div>
+<p id="event-settings-error" class="error" role="alert"></p><div class="event-settings-footer"><span class="hint">Lựa chọn này được lưu trong cấu hình hệ thống.</span><button type="submit" class="primary" id="save-event-settings">Lưu cài đặt <span aria-hidden="true">→</span></button></div>
+</form>
 </section>
 <div class="portal-layout">
 <aside class="department-sidebar"><p class="department-sidebar-title">ĐƠN VỊ & PHÒNG BAN</p><div class="department-tabs" id="department-tabs" role="tablist" aria-label="Đơn vị và phòng ban" aria-orientation="vertical">
@@ -73,7 +88,7 @@ else
 <div class="about-note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17h7m-3.5-3.5v7"/></svg><p>Cổng kết nối ứng dụng và các kênh truyền thông của từng đơn vị. Quyền sử dụng tại mỗi ứng dụng do hệ thống đích quản lý.</p></div>
 </div>
 </dialog>
-<dialog id="delete-dialog"><h2>Xóa ứng dụng?</h2><p id="delete-name"></p><p class="hint">Thẻ ứng dụng và số lượt nhấp của thẻ sẽ bị xóa.</p><div class="dialog-actions"><button class="secondary close">Hủy</button><button class="danger" id="confirm-delete">Xóa ứng dụng</button></div></dialog><div id="toast" role="status"></div><script src="/portal/portal.js?v=24" defer></script><script src="/portal/news-admin.js?v=4" defer></script><script src="/portal/controls.js?v=2" defer></script><script src="/portal/news-preview.js?v=5" defer></script></body></html>
+<dialog id="delete-dialog"><h2>Xóa ứng dụng?</h2><p id="delete-name"></p><p class="hint">Thẻ ứng dụng và số lượt nhấp của thẻ sẽ bị xóa.</p><div class="dialog-actions"><button class="secondary close">Hủy</button><button class="danger" id="confirm-delete">Xóa ứng dụng</button></div></dialog><div id="toast" role="status"></div><script src="/portal/portal.js?v=31" defer></script><script src="/portal/news-admin.js?v=4" defer></script><script src="/portal/controls.js?v=2" defer></script><script src="/portal/news-preview.js?v=5" defer></script></body></html>
 
 
 

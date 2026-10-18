@@ -3,6 +3,7 @@ const $ = s => document.querySelector(s);
 const isAdmin = document.body.dataset.admin === 'true';
 const categories = {vaccination:'Tiêm chủng',dermatology:'Da liễu & Thẩm mỹ',rehabilitation:'Phục hồi chức năng',wellness:'Dưỡng sinh',office:'Văn phòng & Nội bộ'};
 const platforms = {system:'Hệ thống Gold',facebook:'Facebook',zalo:'Zalo',tiktok:'TikTok',youtube:'YouTube',website:'Website'};
+const eventThemes={october20:{title:'Chào mừng ngày Phụ nữ Việt Nam 20/10',description:'Gold trân trọng gửi lời chúc tốt đẹp đến một nửa yêu thương.',preview:'Hoa anh đào rơi, ánh hồng và vàng Gold.',icon:'✿',character:'🌸',image:'/portal/events/womens-day-20-10.png'},halloween:{title:'Không khí Halloween tại Gold',description:'Chúc mọi người một mùa Halloween vui vẻ và an toàn.',preview:'Bí ngô phát sáng, bóng ma tinh nghịch và sắc cam tím.',icon:'🎃',character:'🎃',image:'/portal/events/halloween-banner.png'},christmas:{title:'Merry Christmas · Giáng sinh an lành',description:'Gold chúc bạn một mùa Giáng sinh ấm áp và bình an.',preview:'Bông tuyết rơi và ông già Noel cưỡi tuần lộc.',icon:'❄',character:'🎅🏻🛷🦌',image:'/portal/events/christmas-banner.png'},'new-year':{title:'Chào năm mới · 01/01',description:'Gold chúc bạn một năm mới nhiều sức khỏe và thành công.',preview:'Pháo hoa rực sáng, đèn lồng và ánh vàng may mắn.',icon:'🏮',character:'🏮🎆🏮'},none:{title:'Chủ đề sự kiện đã tắt',description:'Cổng hệ sinh thái Gold đang dùng giao diện tiêu chuẩn.',preview:'Không hiển thị hiệu ứng theo sự kiện.',icon:'·',character:'·'}};
 let apps = [], view = isAdmin?'manage':'home', token = '', refreshToken = '', deleteId = null, requestVersion = 0;
 function saveAdminSession(data){token=data.accessToken;refreshToken=data.refreshToken;try{sessionStorage.setItem('gold-admin-session',JSON.stringify({refreshToken,refreshTokenExpiresAt:data.refreshTokenExpiresAt}));}catch{}}
 function forgetAdminSession(){token='';refreshToken='';try{sessionStorage.removeItem('gold-admin-session');}catch{}}
@@ -15,6 +16,11 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const fold = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').toLowerCase();
 let toastTimer;
 let refreshPromise=null;
+let eventTheme={enabled:true,eventKey:'october20'};
+let eventMessages={};
+function eventCopy(key){const info=eventThemes[key]||eventThemes.none,custom=eventMessages[key]||{};return{title:String(custom.title||info.title),description:String(custom.description||info.description)};}
+function applyEventTheme(settings){eventTheme={enabled:Boolean(settings?.enabled),eventKey:eventThemes[settings?.eventKey]?settings.eventKey:'none'};if(settings?.messages&&typeof settings.messages==='object')eventMessages=settings.messages;const key=eventTheme.enabled?eventTheme.eventKey:'none';document.body.dataset.eventTheme=key;Object.keys(eventThemes).forEach(name=>document.body.classList.toggle('event-'+name,name===key));const info=eventThemes[key],copy=eventCopy(key),hasArt=Boolean(info.image);if($('#event-banner')){$('#event-banner').hidden=key==='none';$('#event-banner-title').textContent=copy.title;$('#event-banner-description').textContent=copy.description;$('#event-character').textContent=info.character;$('#event-character').hidden=hasArt;if(info.image)$('#event-character-art').src=info.image;else $('#event-character-art').removeAttribute('src');$('#event-character-art').hidden=!hasArt;document.querySelectorAll('.october-flower').forEach(item=>{item.textContent=info.icon;item.hidden=hasArt;});}if($('#event-key'))$('#event-key').value=eventTheme.eventKey;if($('#event-enabled')){$('#event-enabled').setAttribute('aria-pressed',String(eventTheme.enabled));$('#event-enabled').classList.toggle('on',eventTheme.enabled);$('#event-enabled-label').textContent=eventTheme.enabled?'Đang bật':'Đang tắt';}const selectedCopy=eventCopy(eventTheme.eventKey);if($('#event-title-text'))$('#event-title-text').value=selectedCopy.title;if($('#event-description-text'))$('#event-description-text').value=selectedCopy.description;renderEventPreview();}
+function renderEventPreview(){if(!$('#event-key'))return;const key=$('#event-enabled').getAttribute('aria-pressed')==='true'?$('#event-key').value:'none',info=eventThemes[key]||eventThemes.none,copy=eventCopy(key),title=$('#event-title-text')?.value.trim()||copy.title,description=$('#event-description-text')?.value.trim()||copy.description;$('#event-preview-title').textContent=title;$('#event-preview-copy').textContent=description;$('#event-settings-preview').className='event-settings-preview event-preview-'+key;const art=$('#event-preview-art');if(art){if(info.image)art.src=info.image;else art.removeAttribute('src');art.hidden=!info.image;}}
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),3500);}
 function captureViewport(){
  const active=document.activeElement,grid=active?.closest('.card-grid');
@@ -39,7 +45,8 @@ function adminState(){
  $('.filter-row').hidden=!isAdmin;
  $('#app-management-section').hidden=!isAdmin;
  $('#news-admin-panel').hidden=!isAdmin||!token||view!=='news';
- $('.portal-layout').hidden=isAdmin&&view==='news';
+ $('#event-settings-panel').hidden=!isAdmin||!token||view!=='settings';
+ $('.portal-layout').hidden=isAdmin&&(view==='news'||view==='settings');
 }
 function clearAdmin(){forgetAdminSession();apps=[];statistics=null;requestVersion++;adminState();$('#results').replaceChildren();$('#metrics').replaceChildren();}
 async function api(url,options={}){
@@ -48,7 +55,7 @@ async function api(url,options={}){
  let r;try{r=await fetch(url,{...options,headers});if(r.status===401&&isAdmin&&refreshToken&&!url.includes('/api/auth/refresh')&&!url.includes('/api/accounts/login')){refreshPromise??=(async()=>{const response=await fetch('/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken,deviceName:'Gold Central · Trình duyệt'})});const refreshed=await response.json().catch(()=>null);if(!response.ok||!refreshed?.data?.accessToken)throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');saveAdminSession(refreshed.data);return true;})().finally(()=>refreshPromise=null);try{await refreshPromise;headers.Authorization='Bearer '+token;r=await fetch(url,{...options,headers});}catch{clearAdmin();throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');}}}catch(error){if(error instanceof TypeError)throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối và thử lại.');throw error;}const data=r.status===204?null:await r.json().catch(()=>null);
  if(!r.ok){if(r.status===401&&isAdmin)clearAdmin();throw new Error(data?.message||(r.status===403?'Bạn cần tài khoản quản trị để thực hiện thao tác này.':r.status===401?'Vui lòng đăng nhập lại.':'Không thể hoàn tất thao tác. Vui lòng thử lại.'));}return data;
 }
-async function load(){const version=++requestVersion;$('#results').innerHTML='<div class="empty">Đang tải dữ liệu...</div>';if(view==='stats')$('#metrics').replaceChildren();try{const query=`/api/portal/statistics?from=${encodeURIComponent($('#stats-date-from').value)}&to=${encodeURIComponent($('#stats-date-to').value)}`;const [data,report]=await Promise.all([api(isAdmin?'/api/portal/manage':'/api/portal/apps'),view==='stats'?api(query):Promise.resolve(null)]);if(version!==requestVersion)return;apps=data;statistics=report;if(report){$('#stats-date-from').value=report.rangeStart;$('#stats-date-to').value=report.rangeEnd;$('#stats-date-from').max=report.rangeEnd;$('#stats-date-to').min=report.rangeStart;syncDatePreset();}render();}catch(e){if(version===requestVersion)$('#results').innerHTML=`<div class="empty"><b>Chưa thể tải dữ liệu</b><p>${esc(e.message)}</p><button class="secondary" data-action="retry">Thử lại</button></div>`;}}
+async function load(){const version=++requestVersion;$('#results').innerHTML='<div class="empty">Đang tải dữ liệu...</div>';if(view==='stats')$('#metrics').replaceChildren();try{const query=`/api/portal/statistics?from=${encodeURIComponent($('#stats-date-from').value)}&to=${encodeURIComponent($('#stats-date-to').value)}`;const [data,report,theme]=await Promise.all([api(isAdmin?'/api/portal/manage':'/api/portal/apps'),view==='stats'?api(query):Promise.resolve(null),api('/api/portal/event-theme').catch(()=>null)]);if(version!==requestVersion)return;if(theme)applyEventTheme(theme);apps=data;statistics=report;if(report){$('#stats-date-from').value=report.rangeStart;$('#stats-date-to').value=report.rangeEnd;$('#stats-date-from').max=report.rangeEnd;$('#stats-date-to').min=report.rangeStart;syncDatePreset();}render();}catch(e){if(version===requestVersion)$('#results').innerHTML=`<div class="empty"><b>Chưa thể tải dữ liệu</b><p>${esc(e.message)}</p><button class="secondary" data-action="retry">Thử lại</button></div>`;}}
 function metric(value,label){return `<div class="metric"><strong>${value.toLocaleString('vi-VN')}</strong><span>${label}</span></div>`;}
 function renderReportCharts(rows){
  const key='rangeClicks';
@@ -122,6 +129,7 @@ async function switchView(next){
  view=next;document.body.dataset.view=view;adminState();
  document.querySelectorAll('#admin-nav [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
  if(next==='news'){await loadNewsAdmin();return;}
+ if(next==='settings'){await loadEventSettings();return;}
  $('#page-title').textContent=view==='manage'?'Quản lý ứng dụng':'Thống kê truy cập';
  $('#page-subtitle').textContent=view==='manage'?'Quản lý đường dẫn, ảnh bìa và thứ tự hiển thị.':'Theo dõi lượt nhấp theo ngày, tuần, tháng và tổng.';
  $('#directory-title').firstChild.textContent=view==='stats'?'Thống kê ứng dụng ':'Danh sách ứng dụng ';
@@ -130,6 +138,13 @@ async function switchView(next){
 }
 function edit(a){editorViewport=captureViewport();const f=$('#app-form');f.reset();f.elements.id.value=a?.id||'';for(const key of ['name','description','category','platform','url','imageUrl','order'])if(a)f.elements[key].value=a[key]??'';if(!a)f.elements.order.value=Math.max(0,...apps.map(x=>x.order))+1;f.elements.isVisible.checked=a?.isVisible??true;$('#editor-error').textContent='';$('#editor-title').textContent=a?'Chỉnh sửa ứng dụng':'Thêm ứng dụng';$('#editor').showModal();}
 $('#admin-nav').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)switchView(b.dataset.view);});
+async function loadEventSettings(){const error=$('#event-settings-error'),save=$('#save-event-settings');error.textContent='';save.disabled=true;try{const settings=await api('/api/portal/event-theme');applyEventTheme(settings);}catch(e){error.textContent=e.message;}finally{save.disabled=false;}}
+$('#event-enabled').addEventListener('click',()=>{const enabled=$('#event-enabled').getAttribute('aria-pressed')!=='true'&&$('#event-key').value!=='none';applyEventTheme({enabled,eventKey:$('#event-key').value});});
+$('#event-key').addEventListener('change',()=>{const enabled=$('#event-key').value!=='none';applyEventTheme({enabled,eventKey:$('#event-key').value});});
+function updateEventMessage(){const key=$('#event-key').value;if(key!=='none')eventMessages[key]={title:$('#event-title-text').value,description:$('#event-description-text').value};renderEventPreview();}
+$('#event-title-text').addEventListener('input',updateEventMessage);
+$('#event-description-text').addEventListener('input',updateEventMessage);
+$('#event-settings-form').addEventListener('submit',async e=>{e.preventDefault();const save=$('#save-event-settings'),error=$('#event-settings-error');save.disabled=true;error.textContent='';try{const result=await api('/api/portal/event-theme',{method:'PUT',body:JSON.stringify({enabled:$('#event-enabled').getAttribute('aria-pressed')==='true',eventKey:$('#event-key').value,messages:eventMessages})});applyEventTheme(result);toast('Đã lưu chủ đề sự kiện.');}catch(ex){error.textContent=ex.message;}finally{save.disabled=false;}});
 for(const selector of ['#category-filter','#sort','#platform-filter'])$(selector).addEventListener('change',render);
 $('#search').addEventListener('input',render);
 function formatDateValue(value){if(!value)return 'Chọn ngày';const [year,month,day]=value.split('-');return `${day}/${month}/${year}`;}
@@ -196,6 +211,6 @@ async function restoreAdminSession(){
  try{const response=await fetch('/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:session.refreshToken,deviceName:'Gold Central · Trình duyệt'})});const result=await response.json().catch(()=>null);if(!response.ok||!result?.data?.accessToken||result.data.account.role!=='admin'){forgetAdminSession();adminState();return;}saveAdminSession(result.data);await switchView('manage');}
  catch{forgetAdminSession();adminState();$('#login-error').textContent='Không thể khôi phục phiên. Vui lòng đăng nhập lại.';}
 }
-adminState();if(!isAdmin)load();else restoreAdminSession();
+adminState();if(!isAdmin)load();else{api('/api/portal/event-theme').then(applyEventTheme).catch(()=>{});restoreAdminSession();}
 
 

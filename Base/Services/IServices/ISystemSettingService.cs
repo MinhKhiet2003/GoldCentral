@@ -7,4 +7,6 @@ public interface ISystemSettingService
 {
     Task<IEnumerable<SystemSettingResponse>> ListAsync(CancellationToken cancellationToken);
     Task<SystemSettingResponse> UpsertAsync(string key, SystemSettingRequest request, CancellationToken cancellationToken);
+    Task<PortalEventThemeResponse> GetPortalEventThemeAsync(CancellationToken cancellationToken);
+    Task<PortalEventThemeResponse> UpdatePortalEventThemeAsync(PortalEventThemeRequest request, CancellationToken cancellationToken);
 }

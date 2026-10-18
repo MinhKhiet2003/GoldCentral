@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace Base.Controllers;
 
-public class PortalController(IPortalService service) : Controller
+public class PortalController(IPortalService service, ISystemSettingService settings) : Controller
 {
     [HttpGet("/")]
     public IActionResult Index() => View();
@@ -12,6 +12,14 @@ public class PortalController(IPortalService service) : Controller
     public IActionResult Admin() => View("Index");
     [HttpGet("/api/portal/apps")]
     public async Task<IActionResult> List(CancellationToken ct) => Ok(await service.ListAsync(false, ct));
+    [AllowAnonymous, HttpGet("/api/portal/event-theme")]
+    public async Task<IActionResult> EventTheme(CancellationToken ct) => Ok(await settings.GetPortalEventThemeAsync(ct));
+    [Authorize(Roles = "admin"), HttpPut("/api/portal/event-theme")]
+    public async Task<IActionResult> UpdateEventTheme([FromBody] PortalEventThemeRequest request, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        return Ok(await settings.UpdatePortalEventThemeAsync(request, ct));
+    }
     [Authorize(Roles = "admin"), HttpGet("/api/portal/manage")]
     public async Task<IActionResult> Manage(CancellationToken ct) => Ok(await service.ListAsync(true, ct));
     [Authorize(Roles = "admin"), HttpGet("/api/portal/statistics")]
