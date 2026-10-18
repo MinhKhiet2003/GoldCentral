@@ -22,6 +22,10 @@ Check(entity.GetCheckConstraints().Count() == 4, "category platform order and cl
 var categoryConstraint = entity.GetCheckConstraints().Single(item => item.Name == "CK_PortalApp_Category").Sql!;
 Check(categoryConstraint.Contains("'rehabilitation'") && categoryConstraint.Contains("'wellness'") && !categoryConstraint.Contains("'general'"), "department categories split into rehabilitation and wellness");
 Check(entity.GetIndexes().Count() == 2, "directory query indexes");
+var music = model.FindEntityType(typeof(MusicTrack))!;
+Check(music.GetTableName() == "MusicTrack", "music library table mapping");
+Check(music.GetCheckConstraints().Count() == 3, "music department, file size and order constraints");
+Check(music.GetIndexes().Any(index => index.Properties.Select(property => property.Name).SequenceEqual(["Department", "IsPublished", "SortOrder"])), "department playlist query index");
 
 var repository = new FakePortalRepository();
 var service = new PortalService(repository, TimeProvider.System);

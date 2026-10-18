@@ -8,6 +8,8 @@ public class PortalController(IPortalService service, ISystemSettingService sett
 {
     [HttpGet("/")]
     public IActionResult Index() => View();
+    [AllowAnonymous, HttpGet("/music")]
+    public IActionResult Music() => View();
     [HttpGet("/admin")]
     public IActionResult Admin() => View("Index");
     [HttpGet("/api/portal/apps")]

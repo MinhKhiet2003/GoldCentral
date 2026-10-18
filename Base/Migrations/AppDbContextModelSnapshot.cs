@@ -124,6 +124,69 @@ namespace Base.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Base.Entities.MusicTrack", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Artist")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<long>("Size")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StoredFileName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Department", "IsPublished", "SortOrder");
+
+                    b.ToTable("MusicTrack", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_MusicTrack_Department", "\"Department\" IN ('all', 'vaccination', 'dermatology', 'rehabilitation', 'wellness', 'office')");
+
+                            t.HasCheckConstraint("CK_MusicTrack_Size", "\"Size\" > 0 AND \"Size\" <= 41943040");
+
+                            t.HasCheckConstraint("CK_MusicTrack_SortOrder", "\"SortOrder\" BETWEEN 1 AND 10000");
+                        });
+                });
+
             modelBuilder.Entity("Base.Entities.NewsArticle", b =>
                 {
                     b.Property<Guid>("Id")

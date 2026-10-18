@@ -33,6 +33,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PortalApp> PortalApps => Set<PortalApp>();
     public DbSet<PortalAppDailyClick> PortalAppDailyClicks => Set<PortalAppDailyClick>();
     public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
+    public DbSet<MusicTrack> MusicTracks => Set<MusicTrack>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,6 +52,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         news.Property(a => a.ViewCount).HasDefaultValue(0L);
         news.HasIndex(a => new { a.IsPublished, a.PublishedAt });
         news.HasIndex(a => new { a.Department, a.IsPublished });
+
+        var musicTrack = modelBuilder.Entity<MusicTrack>();
+        musicTrack.ToTable("MusicTrack", table =>
+        {
+            table.HasCheckConstraint("CK_MusicTrack_Department", "\"Department\" IN ('all', 'vaccination', 'dermatology', 'rehabilitation', 'wellness', 'office')");
+            table.HasCheckConstraint("CK_MusicTrack_Size", "\"Size\" > 0 AND \"Size\" <= 41943040");
+            table.HasCheckConstraint("CK_MusicTrack_SortOrder", "\"SortOrder\" BETWEEN 1 AND 10000");
+        });
+        musicTrack.HasKey(track => track.Id);
+        musicTrack.Property(track => track.Title).HasMaxLength(160).IsRequired();
+        musicTrack.Property(track => track.Artist).HasMaxLength(120);
+        musicTrack.Property(track => track.Department).HasMaxLength(30).IsRequired();
+        musicTrack.Property(track => track.OriginalFileName).HasMaxLength(255).IsRequired();
+        musicTrack.Property(track => track.StoredFileName).HasMaxLength(64).IsRequired();
+        musicTrack.Property(track => track.ContentType).HasMaxLength(100).IsRequired();
+        musicTrack.HasIndex(track => new { track.Department, track.IsPublished, track.SortOrder });
+        musicTrack.HasIndex(track => track.CreatedAt);
+
         var portalApp = modelBuilder.Entity<PortalApp>();
         portalApp.ToTable("PortalApp", table =>
         {

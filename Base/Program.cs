@@ -35,6 +35,7 @@ builder.Services.AddApiPresentation();
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<IPortalRepository, PortalRepository>();
 builder.Services.AddScoped<IPortalService, PortalService>();
+builder.Services.AddScoped<IMusicService, MusicService>();
 builder.Services.AddScoped<INewsRepository, NewsRepository>();
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -225,6 +226,20 @@ app.UseExceptionHandler(new ExceptionHandlerOptions
     ExceptionHandler = async context =>
     {
         var error = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        if (error is OperationCanceledException)
+        {
+            context.Response.Clear();
+            if (context.RequestAborted.IsCancellationRequested)
+            {
+                context.Response.StatusCode = 499;
+                return;
+            }
+
+            await ApiResponseWriter.WriteErrorAsync(context, StatusCodes.Status503ServiceUnavailable,
+                "Yêu cầu bị hủy trước khi hoàn tất. Vui lòng thử lại.");
+            return;
+        }
+
         var statusCode = StatusCodes.Status500InternalServerError;
         string? message = null;
 
