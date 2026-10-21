@@ -4,13 +4,15 @@ using Base.Models.Requests;
 using Base.Models.Responses;
 using Base.Repositories.IRepositories;
 using Base.Services.IServices;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 
 namespace Base.Services;
 
-public class SystemSettingService(ISystemSettingRepository repository) : ISystemSettingService
+public class SystemSettingService(ISystemSettingRepository repository, IMemoryCache cache) : ISystemSettingService
 {
     private const string PortalEventThemeKey = "portal.eventTheme";
+    private const string PortalEventThemeCacheKey = "portal.eventTheme.response";
     private static readonly HashSet<string> PortalEventKeys = ["none", "october20", "halloween", "christmas", "new-year"];
 
     public async Task<IEnumerable<SystemSettingResponse>> ListAsync(CancellationToken cancellationToken)
@@ -37,36 +39,41 @@ public class SystemSettingService(ISystemSettingRepository repository) : ISystem
         setting.Description = request.Description;
         setting.UpdatedAt = DateTime.UtcNow;
         await repository.SaveAsync(cancellationToken);
+        if (key == PortalEventThemeKey) cache.Remove(PortalEventThemeCacheKey);
         return ToResponse(setting);
     }
 
     public async Task<PortalEventThemeResponse> GetPortalEventThemeAsync(CancellationToken cancellationToken)
     {
-        var setting = await repository.GetAsync(PortalEventThemeKey, cancellationToken);
-        if (setting is null)
+        return await cache.GetOrCreateAsync(PortalEventThemeCacheKey, async entry =>
         {
-            return new PortalEventThemeResponse { Enabled = true, EventKey = "october20" };
-        }
-
-        try
-        {
-            var configured = JsonSerializer.Deserialize<PortalEventThemeRequest>(setting.Value);
-            if (configured is not null && PortalEventKeys.Contains(configured.EventKey))
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
+            var setting = await repository.GetAsync(PortalEventThemeKey, cancellationToken);
+            if (setting is null)
             {
-                return new PortalEventThemeResponse
-                {
-                    Enabled = configured.Enabled && configured.EventKey != "none",
-                    EventKey = configured.Enabled ? configured.EventKey : "none",
-                    Messages = NormalizeMessages(configured.Messages)
-                };
+                return new PortalEventThemeResponse { Enabled = true, EventKey = "october20" };
             }
-        }
-        catch (JsonException)
-        {
-            // Fall back safely if a stored value was edited outside the settings UI.
-        }
 
-        return new PortalEventThemeResponse { Enabled = false, EventKey = "none" };
+            try
+            {
+                var configured = JsonSerializer.Deserialize<PortalEventThemeRequest>(setting.Value);
+                if (configured is not null && PortalEventKeys.Contains(configured.EventKey))
+                {
+                    return new PortalEventThemeResponse
+                    {
+                        Enabled = configured.Enabled && configured.EventKey != "none",
+                        EventKey = configured.Enabled ? configured.EventKey : "none",
+                        Messages = NormalizeMessages(configured.Messages)
+                    };
+                }
+            }
+            catch (JsonException)
+            {
+                // Fall back safely if a stored value was edited outside the settings UI.
+            }
+
+            return new PortalEventThemeResponse { Enabled = false, EventKey = "none" };
+        }) ?? new PortalEventThemeResponse { Enabled = false, EventKey = "none" };
     }
 
     public async Task<PortalEventThemeResponse> UpdatePortalEventThemeAsync(PortalEventThemeRequest request, CancellationToken cancellationToken)

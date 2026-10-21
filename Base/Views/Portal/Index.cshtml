@@ -6,6 +6,7 @@
 <title>Gold · Cổng truy cập hệ sinh thái</title><link rel="stylesheet" href="/portal/portal.css?v=57">
 </head>
 <body class="@(isAdmin ? "login-only" : "")" data-admin="@(isAdmin ? "true" : "false")" data-event-theme="october20">
+<script>try{const t=JSON.parse(localStorage.getItem('gold-portal-event-theme')||'null'),k=t?.enabled&&['october20','halloween','christmas','new-year'].includes(t.eventKey)?t.eventKey:'none';if(t){document.body.dataset.eventTheme=k;for(const n of ['october20','halloween','christmas','new-year'])document.body.classList.toggle('event-'+n,n===k);}}catch{}</script>
 <header class="site-header"><div class="header-inner">
 <a class="brand" href="/" aria-label="Gold — Trang chủ"><span class="gold-logo"><img src="/portal/gold-logo.png" alt="Gold"></span><span class="brand-caption">Y TẾ TOÀN CẦU<span>Cổng truy cập hệ sinh thái</span></span></a>
 @if (isAdmin)
@@ -107,7 +108,7 @@ else
 <div class="about-note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17h7m-3.5-3.5v7"/></svg><p>Cổng kết nối ứng dụng và các kênh truyền thông của từng đơn vị. Quyền sử dụng tại mỗi ứng dụng do hệ thống đích quản lý.</p></div>
 </div>
 </dialog>
-<dialog id="delete-dialog"><h2>Xóa ứng dụng?</h2><p id="delete-name"></p><p class="hint">Thẻ ứng dụng và số lượt nhấp của thẻ sẽ bị xóa.</p><div class="dialog-actions"><button class="secondary close">Hủy</button><button class="danger" id="confirm-delete">Xóa ứng dụng</button></div></dialog><div id="toast" role="status"></div><script src="/portal/portal.js?v=44" defer></script><script src="/portal/news-admin.js?v=4" defer></script><script src="/portal/controls.js?v=2" defer></script><script src="/portal/news-preview.js?v=5" defer></script></body></html>
+<dialog id="delete-dialog"><h2>Xóa ứng dụng?</h2><p id="delete-name"></p><p class="hint">Thẻ ứng dụng và số lượt nhấp của thẻ sẽ bị xóa.</p><div class="dialog-actions"><button class="secondary close">Hủy</button><button class="danger" id="confirm-delete">Xóa ứng dụng</button></div></dialog><div id="toast" role="status"></div><script src="/portal/event-theme.js?v=1" defer></script><script src="/portal/portal.js?v=46" defer></script><script src="/portal/news-admin.js?v=4" defer></script><script src="/portal/controls.js?v=2" defer></script><script src="/portal/news-preview.js?v=5" defer></script></body></html>
 
 
 

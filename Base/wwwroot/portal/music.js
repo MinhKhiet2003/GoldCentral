@@ -1,8 +1,6 @@
 'use strict';
 const $=selector=>document.querySelector(selector);
 const departments={all:'Tất cả phòng ban',vaccination:'Tiêm chủng',dermatology:'Da liễu & Thẩm mỹ',rehabilitation:'Phục hồi chức năng',wellness:'Dưỡng sinh',office:'Văn phòng & Nội bộ'};
-async function loadMusicEventTheme(){try{const response=await fetch('/api/portal/event-theme');if(!response.ok)return;const settings=await response.json(),key=settings.enabled&&['october20','halloween','christmas','new-year'].includes(settings.eventKey)?settings.eventKey:'none';document.body.dataset.eventTheme=key;for(const name of ['october20','halloween','christmas','new-year'])document.body.classList.toggle(`event-${name}`,name===key);}catch{document.body.dataset.eventTheme='none';}}
-loadMusicEventTheme();
 const audio=$('#music-audio');
 let saved={};try{saved=JSON.parse(localStorage.getItem('gold-music-state')||'{}')||{};}catch{}
 saved.hidden=false;
