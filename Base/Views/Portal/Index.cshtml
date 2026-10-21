@@ -3,7 +3,7 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#087542">
-<title>Gold · Cổng truy cập hệ sinh thái</title><link rel="stylesheet" href="/portal/portal.css?v=57">
+<title>Gold · Cổng truy cập hệ sinh thái</title><link rel="stylesheet" href="/portal/portal.css?v=58">
 </head>
 <body class="@(isAdmin ? "login-only" : "")" data-admin="@(isAdmin ? "true" : "false")" data-event-theme="october20">
 <script>try{const t=JSON.parse(localStorage.getItem('gold-portal-event-theme')||'null'),k=t?.enabled&&['october20','halloween','christmas','new-year'].includes(t.eventKey)?t.eventKey:'none';if(t){document.body.dataset.eventTheme=k;for(const n of ['october20','halloween','christmas','new-year'])document.body.classList.toggle('event-'+n,n===k);}}catch{}</script>
@@ -26,6 +26,7 @@ else
 <section id="login-panel" class="login-panel" hidden>
 <form id="login-form"><span class="eyebrow">GOLD CENTRAL · QUẢN TRỊ</span><h1>Đăng nhập quản trị</h1><p class="hint">Quản lý các kết nối trong hệ sinh thái Gold.</p><label>Tên đăng nhập<input name="username" required autocomplete="username" placeholder="Nhập tên đăng nhập"></label><label>Mật khẩu<input type="password" name="password" required autocomplete="current-password" placeholder="Nhập mật khẩu"></label><p id="login-error" class="error" role="alert" tabindex="-1"></p><button class="primary" type="submit">Đăng nhập <span>→</span></button></form>
 </section>
+<section id="session-restoring" class="login-panel session-restoring" hidden aria-live="polite"><span class="eyebrow">GOLD CENTRAL · QUẢN TRỊ</span><h1>Đang khôi phục phiên</h1><p class="hint">Đang mở lại màn hình bạn đang làm việc...</p><span class="restore-spinner" aria-hidden="true"></span></section>
 <div id="portal-content" hidden>
 <nav class="admin-nav" id="admin-nav" aria-label="Điều hướng quản trị" hidden><button class="active" data-view="manage">Quản lý ứng dụng</button><button data-view="stats">Thống kê truy cập</button><button data-view="news">Quản lý tin tức</button><button data-view="music">Quản lý nhạc</button><button data-view="settings">Cài đặt sự kiện</button></nav>
 <section id="news-admin-panel" hidden>
@@ -108,7 +109,7 @@ else
 <div class="about-note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17h7m-3.5-3.5v7"/></svg><p>Cổng kết nối ứng dụng và các kênh truyền thông của từng đơn vị. Quyền sử dụng tại mỗi ứng dụng do hệ thống đích quản lý.</p></div>
 </div>
 </dialog>
-<dialog id="delete-dialog"><h2>Xóa ứng dụng?</h2><p id="delete-name"></p><p class="hint">Thẻ ứng dụng và số lượt nhấp của thẻ sẽ bị xóa.</p><div class="dialog-actions"><button class="secondary close">Hủy</button><button class="danger" id="confirm-delete">Xóa ứng dụng</button></div></dialog><div id="toast" role="status"></div><script src="/portal/event-theme.js?v=1" defer></script><script src="/portal/portal.js?v=46" defer></script><script src="/portal/news-admin.js?v=4" defer></script><script src="/portal/controls.js?v=2" defer></script><script src="/portal/news-preview.js?v=5" defer></script></body></html>
+<dialog id="delete-dialog"><h2>Xóa ứng dụng?</h2><p id="delete-name"></p><p class="hint">Thẻ ứng dụng và số lượt nhấp của thẻ sẽ bị xóa.</p><div class="dialog-actions"><button class="secondary close">Hủy</button><button class="danger" id="confirm-delete">Xóa ứng dụng</button></div></dialog><div id="toast" role="status"></div><script src="/portal/event-theme.js?v=1" defer></script><script src="/portal/portal.js?v=47" defer></script><script src="/portal/news-admin.js?v=4" defer></script><script src="/portal/controls.js?v=2" defer></script><script src="/portal/news-preview.js?v=5" defer></script></body></html>
 
 
 

@@ -449,3 +449,4 @@ body.event-october20 :is(button,a):focus-visible,body.event-halloween :is(button
 @keyframes nav-tab-arrive{from{opacity:.7;transform:translateY(2px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:540px){.top-navigation{gap:2px;padding:4px}.top-navigation a{gap:5px;padding:0 9px;font-size:11px}.top-navigation a svg{width:14px;height:14px;flex-basis:14px}}
 @media(prefers-reduced-motion:reduce){.top-navigation a,.top-navigation a svg{transition:none}.top-navigation a:hover{transform:none}.top-navigation a.active{animation:none}@view-transition{navigation:none}}
+.session-restoring{text-align:center}.session-restoring .hint{margin-bottom:20px}.restore-spinner{display:inline-block;width:28px;height:28px;border:3px solid #e4ecdf;border-top-color:#087542;border-radius:50%;animation:session-spin .8s linear infinite}@keyframes session-spin{to{transform:rotate(360deg)}}

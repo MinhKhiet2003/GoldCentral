@@ -7,8 +7,11 @@ const eventThemes={october20:{title:'Chào mừng ngày Phụ nữ Việt Nam 20
 const adminViews = new Set(['manage','stats','news','music','settings']);
 function adminViewFromUrl(){const requested=window.location.hash.slice(1);return adminViews.has(requested)?requested:'manage';}
 let apps = [], view = isAdmin?adminViewFromUrl():'home', token = '', refreshToken = '', deleteId = null, requestVersion = 0;
+let adminSessionRestoring=false;
+let savedAdminSession=null;
+if(isAdmin){try{savedAdminSession=JSON.parse(sessionStorage.getItem('gold-admin-session')||'null');adminSessionRestoring=Boolean(savedAdminSession?.refreshToken&&(!savedAdminSession.refreshTokenExpiresAt||new Date(savedAdminSession.refreshTokenExpiresAt)>new Date()));}catch{savedAdminSession=null;}}
 function saveAdminSession(data){token=data.accessToken;refreshToken=data.refreshToken;try{sessionStorage.setItem('gold-admin-session',JSON.stringify({refreshToken,refreshTokenExpiresAt:data.refreshTokenExpiresAt}));}catch{}}
-function forgetAdminSession(){token='';refreshToken='';try{sessionStorage.removeItem('gold-admin-session');}catch{}}
+function forgetAdminSession(){token='';refreshToken='';savedAdminSession=null;adminSessionRestoring=false;try{sessionStorage.removeItem('gold-admin-session');}catch{}}
 let statistics = null;
 let catalogType = 'all';
 let editorViewport = null, deleteViewport = null;
@@ -44,7 +47,7 @@ function renderPreservingViewport(position=captureViewport()){render();restoreVi
 async function reloadAppsPreservingViewport(position){apps=await api(isAdmin?'/api/portal/manage':'/api/portal/apps');renderPreservingViewport(position);}
 function adminState(){
  document.body.classList.toggle('login-only',isAdmin&&!token);
- $('#login-panel').hidden=!isAdmin||Boolean(token);$('#portal-content').hidden=isAdmin&&!token;
+ $('#login-panel').hidden=!isAdmin||Boolean(token)||adminSessionRestoring;$('#session-restoring').hidden=!adminSessionRestoring;$('#portal-content').hidden=isAdmin&&!token;
  $('#admin-nav').hidden=!isAdmin||!token;$('#add-app').hidden=!(isAdmin&&token&&view==='manage');
  if($('#logout'))$('#logout').hidden=!token;
  $('#favorites-section').hidden=isAdmin;$('#metrics').hidden=view!=='stats';$('#sort').hidden=!isAdmin;
@@ -318,11 +321,12 @@ $('#delete-dialog').addEventListener('close',()=>restoreViewport(deleteViewport)
 $('#about').onclick=()=>$('#about-dialog').showModal();
 window.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!document.querySelector('dialog[open]')&&!$('#portal-content').hidden){e.preventDefault();$('#search').focus();}});
 async function restoreAdminSession(){
- let session;try{session=JSON.parse(sessionStorage.getItem('gold-admin-session')||'null');}catch{}
- if(!session?.refreshToken||!isAdmin)return;
- if(session.refreshTokenExpiresAt&&new Date(session.refreshTokenExpiresAt)<=new Date()){forgetAdminSession();return;}
- try{const response=await fetch('/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:session.refreshToken,deviceName:'Gold Central · Trình duyệt'})});const result=await response.json().catch(()=>null);if(!response.ok||!result?.data?.accessToken||result.data.account.role!=='admin'){forgetAdminSession();adminState();return;}saveAdminSession(result.data);await switchView(adminViewFromUrl(),{syncHistory:false});}
- catch{forgetAdminSession();adminState();$('#login-error').textContent='Không thể khôi phục phiên. Vui lòng đăng nhập lại.';}
+ const session=savedAdminSession;
+ if(!session?.refreshToken||!isAdmin){adminSessionRestoring=false;adminState();return;}
+ if(session.refreshTokenExpiresAt&&new Date(session.refreshTokenExpiresAt)<=new Date()){forgetAdminSession();adminState();return;}
+ adminSessionRestoring=true;adminState();
+ try{const response=await fetch('/api/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refreshToken:session.refreshToken,deviceName:'Gold Central · Trình duyệt'})});const result=await response.json().catch(()=>null);if(!response.ok||!result?.data?.accessToken||result.data.account.role!=='admin'){forgetAdminSession();adminState();return;}saveAdminSession(result.data);adminSessionRestoring=false;await switchView(adminViewFromUrl(),{syncHistory:false});}
+ catch{adminSessionRestoring=false;adminState();$('#login-error').textContent='Chưa thể kết nối để khôi phục phiên. Hãy thử tải lại trang; bạn chưa cần đăng nhập lại.';}
 }
 adminState();loadMusicLibrary(musicDepartment);if(!isAdmin)load();else restoreAdminSession();
 
